@@ -1,26 +1,67 @@
+<!-- App.vue -->
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <FullPageWrapper>
+    <FullPageSection>
+      <div class="p-5">
+          <h1>Some title test</h1>
+          <p class="fs-4">Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text here</p>
+      </div>
+    </FullPageSection>
+
+    <FullPageSection>
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="p-5">
+                <h1>Some title test</h1>
+                <p class="fs-4">Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text here</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+               <MapboxMap />
+            </div>
+          </div>
+        </div>
+      </FullPageSection>
+
+    <FullPageSection>
+            <div class="p-5">
+          <h1>Some title test</h1>
+          <p class="fs-4">Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text here</p>
+      </div>
+    </FullPageSection>
+  </FullPageWrapper>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import FullPageWrapper from './components/FullPageWrapper.vue';
+import FullPageSection from './components/FullPageSection.vue';
+import MapboxMap from './components/MapboxMap.vue';
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
-  }
-}
+    FullPageWrapper,
+    FullPageSection,
+    MapboxMap,
+  },
+};
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+
+body { margin: 0; padding: 0; }
+#map { position: absolute; 
+       top: 0; 
+       bottom: 0; 
+       height: 100%;
+       width: 100%;
+
 }
+
+.mapboxgl-popup {
+    max-width: 400px;
+    font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+}
+
 </style>
