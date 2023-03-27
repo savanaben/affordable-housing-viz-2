@@ -25,11 +25,31 @@
       </FullPageSection>
 
     <FullPageSection>
-            <div class="p-5">
+      <div class="container-fluid">
+          <div class="row">
+            <div class="col-md-2">
+            </div>
+            <div class="col-md-8">
+              <div class="p-5">
+                <h1>Test Scroll in a Page</h1>
+                <p class="fs-4">Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome </p>
+                <p class="fs-4">Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome </p>
+                <p class="fs-4">Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text hereSome </p>
+              </div>
+            </div>
+            <div class="col-md-2">
+            </div>
+          </div>
+        </div>
+    </FullPageSection>
+
+    <FullPageSection>
+      <div class="p-5">
           <h1>Some title test</h1>
           <p class="fs-4">Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text here</p>
       </div>
     </FullPageSection>
+
   </FullPageWrapper>
 </template>
 
