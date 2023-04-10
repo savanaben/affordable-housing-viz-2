@@ -13,12 +13,15 @@
           <div class="row">
             <div class="col-md-6">
               <div class="p-5">
-                <h1>Some title test</h1>
+                <h1>+</h1>
                 <p class="fs-4">Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text here</p>
               </div>
             </div>
             <div class="col-md-6">
-               <MapboxMap />
+              <MapboxMap/>
+              <!--
+              <MapboxMap @disable-scrolling="disableScrolling" @enable-scrolling="enableScrolling" ref="fullPageWrapper" />
+                -->
             </div>
           </div>
         </div>
@@ -65,7 +68,26 @@ export default {
     FullPageSection,
     MapboxMap,
   },
+  
+  /*
+  methods: {
+    disableScrolling() {
+  if (this.$refs.fullPageWrapper && this.$refs.fullPageWrapper.fullpageInstance) {
+    this.$refs.fullPageWrapper.fullpageInstance.setAllowScrolling(false);
+  }
+},
+enableScrolling() {
+  if (this.$refs.fullPageWrapper && this.$refs.fullPageWrapper.fullpageInstance) {
+    this.$refs.fullPageWrapper.fullpageInstance.setAllowScrolling(true);
+  }
+},
+  },
+*/
+
+
+
 };
+
 </script>
 
 <style>

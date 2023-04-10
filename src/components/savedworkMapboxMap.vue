@@ -1,11 +1,7 @@
 <template>
   <div>
-    <!-- Change: Separate buttons for each layer -->
-    <button @click="showMunicipalitiesLayer" style="position: absolute; top: 20px; right: 20px; z-index: 9999;">
-      Municipalities
-    </button>
-    <button @click="showCountiesLayer" style="position: absolute; top: 50px; right: 20px; z-index: 9999;">
-      Counties
+    <button v-for="layer in layers" :key="layer.id" @click="toggleLayer(layer.id)" style="position: absolute; top: 20px; right: 20px; z-index: 9999;">
+      Toggle {{ layer.name }}
     </button>
 
     <div id="map"></div>
@@ -22,7 +18,6 @@ export default {
   data() {
     return {
       map: null,
-      currentPopup: null,
       layers: [
         {
           id: 'states',
@@ -48,55 +43,34 @@ export default {
       csvDataLookup: {}
     };
   },
-
-
   mounted() {
-  this.initMap().then(() => {
-    this.map.getCanvasContainer().addEventListener('mouseenter', () => {
-      this.$emit('disable-scrolling');
-    });
-
-    this.map.getCanvasContainer().addEventListener('mouseleave', () => {
-      this.$emit('enable-scrolling');
-    });
-  });
-},
-
-
-
-
-
+    this.initMap();
+  },
   methods: {
- 
-
     async initMap() {
-  mapboxgl.accessToken = 'pk.eyJ1Ijoic2F2YW5hYmVuIiwiYSI6ImNsZTNobWs4YjA0eGkzcG1wZzhycjZrb3cifQ.4_Du3FBo2v9tdy2DZRhb6A';
-  const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/light-v11',
-    center: [-74.7057, 40.1583],
-    zoom: 7
-  });
+      mapboxgl.accessToken = 'pk.eyJ1Ijoic2F2YW5hYmVuIiwiYSI6ImNsZTNobWs4YjA0eGkzcG1wZzhycjZrb3cifQ.4_Du3FBo2v9tdy2DZRhb6A';
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [-74.7057, 40.1583],
+        zoom: 7
+      });
 
-  this.map = map;
+      this.map = map;
 
-  for (const layer of this.layers) {
-    if (layer.csvUrl) {
-      const lookup = await this.fetchCsvData(layer.csvUrl);
-      this.csvDataLookup[layer.id] = lookup;
-    }
-  }
-
-  return new Promise((resolve) => {
-    map.on('load', async () => {
       for (const layer of this.layers) {
-        this.loadLayer(map, layer);
+        if (layer.csvUrl) {
+          const lookup = await this.fetchCsvData(layer.csvUrl);
+          this.csvDataLookup[layer.id] = lookup;
+        }
       }
-      resolve();
-    });
-  });
-},
 
+      map.on('load', async () => {
+        for (const layer of this.layers) {
+          this.loadLayer(map, layer);
+        }
+      });
+    },
 
     async loadLayer(map, layerConfig) {
       map.addSource(layerConfig.id, {
@@ -173,6 +147,7 @@ export default {
 
 
 
+
 addMapInteractions(map, layerId) {
   const layer = this.layers.find(l => l.id === layerId);
   const layerName = layer.name;
@@ -186,13 +161,7 @@ addMapInteractions(map, layerId) {
     const properties = e.features[0].properties;
     const popupContent = this.getPopupContent(layerId, properties);
 
-    // Close the current popup if it exists
-    if (this.currentPopup) {
-      this.currentPopup.remove();
-    }
-
-    // Create a new popup and store it in the currentPopup data property
-    this.currentPopup = new mapboxgl.Popup()
+    new mapboxgl.Popup()
       .setLngLat(e.lngLat)
       .setHTML(popupContent)
       .addTo(map);
@@ -210,39 +179,18 @@ addMapInteractions(map, layerId) {
 
 
 
-showMunicipalitiesLayer() {
-      const layerId = 'municipalities';
-      this.layers.forEach(layer => {
-        layer.visible = layer.id === layerId;
-        const visibility = layer.visible ? 'visible' : 'none';
-        this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
-        this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
-      });
-        // Close the current popup if it exists
-  if (this.currentPopup) {
-    this.currentPopup.remove();
-  }
-      this.addMapInteractions(this.map, layerId);
-    },
 
 
-showCountiesLayer() {
-      const layerId = 'states';
-      this.layers.forEach(layer => {
-        layer.visible = layer.id === layerId;
-        const visibility = layer.visible ? 'visible' : 'none';
-        this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
-        this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
-      });
-        // Close the current popup if it exists
-  if (this.currentPopup) {
-    this.currentPopup.remove();
-  }
-      this.addMapInteractions(this.map, layerId);
+
+    toggleLayer(layerId) {
+      const layer = this.layers.find(l => l.id === layerId);
+      layer.visible = !layer.visible;
+      const visibility = layer.visible ? 'visible' : 'none';
+
+      this.map.setLayoutProperty(`${layerId}-layer`, 'visibility', visibility);
+      this.map.setLayoutProperty(`${layerId}-outline`, 'visibility', visibility);
     }
   },
 };
-
-
 </script>
 

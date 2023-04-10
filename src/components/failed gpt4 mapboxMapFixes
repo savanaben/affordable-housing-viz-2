@@ -1,0 +1,158 @@
+<template>
+  <button @click="toggleMapData" style="position: absolute; top: 20px; right: 20px; z-index: 9999;">Toggle Map Data</button>
+  <div id="map"></div>
+</template>
+
+<script>
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import * as d3 from 'd3';
+
+export default {
+  name: 'MapboxMap',
+  data() {
+    return {
+      map: null,
+      visibleLayer: 'county',
+      layers: {
+        county: {
+          idPrefix: 'county',
+          sourceId: 'states',
+          geoJsonPath: '/geoJSON/County_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
+          csvPath: '/data-csvs/County_data.csv',
+          fillColor: 'rgba(200, 100, 240, 0.22)',
+          lineColor: 'rgba(200, 100, 240, 1)',
+        },
+        municipality: {
+          idPrefix: 'municipality',
+          sourceId: 'municipalities',
+          geoJsonPath: '/geoJSON/Municipal_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
+          csvPath: '/data-csvs/Municipality_data.csv',
+          fillColor: 'rgba(100, 240, 200, 0.22)',
+          lineColor: 'rgba(100, 240, 200, 1)',
+        },
+      },
+    };
+  },
+  mounted() {
+    this.initMap();
+  },
+  methods: {
+    async initMap() {
+      mapboxgl.accessToken = 'pk.eyJ1Ijoic2F2YW5hYmVuIiwiYSI6ImNsZTNobWs4YjA0eGkzcG1wZzhycjZrb3cifQ.4_Du3FBo2v9tdy2DZRhb6A';
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v11',
+        center: [-74.7057, 40.1583],
+        zoom: 7
+      });
+
+      this.map = map;
+
+      map.on('load', async () => {
+        await this.addMapData(map, this.layers.county);
+        await this.addMapData(map, this.layers.municipality);
+
+        this.addMapInteractions(map, 'county-layer');
+        this.addMapInteractions(map, 'municipality-layer');
+      });
+    },
+
+    async addMapData(map, layerConfig) {
+      const csvDataLookup = await this.fetchCsvData(layerConfig.csvPath);
+      layerConfig.csvDataLookup = csvDataLookup;
+
+      map.addSource(layerConfig.sourceId, {
+        'type': 'geojson',
+        'data': layerConfig.geoJsonPath
+      });
+
+
+          map.addLayer({
+  'id': `${layerConfig.idPrefix}-layer`,
+  'type': 'fill',
+  'source': layerConfig.sourceId,
+  'paint': {
+    'fill-color': layerConfig.fillColor,
+  },
+  'layout': {
+    'visibility': layerConfig.idPrefix === 'county' ? 'visible' : 'none'
+  }
+});
+
+map.addLayer({
+  'id': `${layerConfig.idPrefix}-outline`,
+  'type': 'line',
+  'source': layerConfig.sourceId,
+  'paint': {
+    'line-color': layerConfig.lineColor,
+    'line-width': 2
+  },
+  'layout': {
+    'visibility': layerConfig.idPrefix === 'county' ? 'visible' : 'none'
+  }
+});
+
+},
+
+async fetchCsvData(csvUrl) {
+  const response = await d3.csv(csvUrl);
+  const lookup = {};
+  response.forEach(row => {
+    lookup[row.COUNTY] = {
+      column2: row.column2,
+      column3: row.column3
+    };
+  });
+  return lookup;
+},
+
+addMapInteractions(map, layerId) {
+  map.on('click', layerId, (e) => {
+    const county = e.features[0].properties.COUNTY;
+    const countyLabel = e.features[0].properties.COUNTY_LABEL;
+
+    const rowData = this.layers[this.visibleLayer].csvDataLookup[county];
+
+    let popupContent = `<strong>${countyLabel}</strong>`;
+
+    if (rowData) {
+      if (rowData.column2) {
+        popupContent += `<br>Column 2: ${rowData.column2}`;
+      }
+      if (rowData.column3) {
+        popupContent += `<br>Column 3: ${rowData.column3}`;
+      }
+    }
+
+    new mapboxgl.Popup()
+      .setLngLat(e.lngLat)
+      .setHTML(popupContent)
+      .addTo(map);
+  });
+
+  map.on('mouseenter', layerId, () => {
+    map.getCanvas().style.cursor = 'pointer';
+  });
+
+  map.on('mouseleave', layerId, () => {
+    map.getCanvas().style.cursor = '';
+  });
+},
+
+toggleMapData() {
+  const map = this.map;
+  const nextVisibleLayer = this.visibleLayer === 'county' ? 'municipality' : 'county';
+
+  map.setLayoutProperty(`${this.layers[this.visibleLayer].idPrefix}-layer`, 'visibility', 'none');
+  map.setLayoutProperty(`${this.layers[this.visibleLayer].idPrefix}-outline`, 'visibility', 'none');
+
+  map.setLayoutProperty(`${this.layers[nextVisibleLayer].idPrefix}-layer`, 'visibility', 'visible');
+  map.setLayoutProperty(`${this.layers[nextVisibleLayer].idPrefix}-outline`, 'visibility', 'visible');
+
+  this.visibleLayer = nextVisibleLayer;
+},
+
+},
+};
+</script>
