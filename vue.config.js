@@ -4,5 +4,5 @@ module.exports = defineConfig({
 })
 
 module.exports = {
-  publicPath: process.env.NODE_ENV === 'production' ? '/savanaben/affordable-housing-viz-2/' : '/'
-}
+  publicPath: process.env.NODE_ENV === 'production' ? '/affordable-housing-viz-2/' : '/'
+};

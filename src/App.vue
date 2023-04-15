@@ -13,12 +13,12 @@
           <div class="row">
             <div class="col-md-6">
               <div class="p-5">
-                <h1>+</h1>
+                <h1>test title</h1>
                 <p class="fs-4">Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text here</p>
               </div>
             </div>
             <div class="col-md-6">
-              <MapboxMap/>
+              <MapboxMap @open-housing-data-modal="handleHousingDataModal" />
               <!--
               <MapboxMap @disable-scrolling="disableScrolling" @enable-scrolling="enableScrolling" ref="fullPageWrapper" />
                 -->
@@ -52,14 +52,19 @@
           <p class="fs-4">Some title test text here Some title test text here Some title test text here Some title test text hereSome title test text hereSome title test text here</p>
       </div>
     </FullPageSection>
-
+    <HousingDataModal ref="housingDataModal" />
   </FullPageWrapper>
+
+
+
 </template>
 
 <script>
 import FullPageWrapper from './components/FullPageWrapper.vue';
 import FullPageSection from './components/FullPageSection.vue';
 import MapboxMap from './components/MapboxMap.vue';
+import HousingDataModal from './components/HousingDataModal.vue';
+
 
 export default {
   name: 'App',
@@ -67,23 +72,14 @@ export default {
     FullPageWrapper,
     FullPageSection,
     MapboxMap,
+    HousingDataModal,
   },
   
-  /*
   methods: {
-    disableScrolling() {
-  if (this.$refs.fullPageWrapper && this.$refs.fullPageWrapper.fullpageInstance) {
-    this.$refs.fullPageWrapper.fullpageInstance.setAllowScrolling(false);
-  }
-},
-enableScrolling() {
-  if (this.$refs.fullPageWrapper && this.$refs.fullPageWrapper.fullpageInstance) {
-    this.$refs.fullPageWrapper.fullpageInstance.setAllowScrolling(true);
-  }
-},
+    handleHousingDataModal({ municipalityName, comuMerged }) {
+      this.$refs.housingDataModal.openHousingDataModal(municipalityName, comuMerged);
+    },
   },
-*/
-
 
 
 };

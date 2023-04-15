@@ -1,6 +1,15 @@
 <template>
-  <button @click="toggleMapData" style="position: absolute; top: 20px; right: 20px; z-index: 9999;">Toggle Map Data</button>
-  <div id="map"></div>
+  <div>
+    <!-- Change: Separate buttons for each layer -->
+    <button @click="showMunicipalitiesLayer" style="position: absolute; top: 20px; right: 20px; z-index: 9999;">
+      Municipalities
+    </button>
+    <button @click="showCountiesLayer" style="position: absolute; top: 50px; right: 20px; z-index: 9999;">
+      Counties
+    </button>
+
+    <div id="map"></div>
+  </div>
 </template>
 
 <script>
@@ -13,109 +22,157 @@ export default {
   data() {
     return {
       map: null,
-      visibleLayer: 'county',
-      layers: {
-        county: {
-          idPrefix: 'county',
-          sourceId: 'states',
-          geoJsonPath: '/geoJSON/County_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
-          csvPath: '/data-csvs/County_data.csv',
+      currentPopup: null,
+      layers: [
+        {
+          id: 'states',
+          name: 'County Data',
+          geoJsonUrl: 'geoJSON/County_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
+          csvUrl: '/data-csvs/County_data.csv',
           fillColor: 'rgba(200, 100, 240, 0.22)',
           lineColor: 'rgba(200, 100, 240, 1)',
+          lineWidth: 2,
+          visible: true
         },
-        municipality: {
-          idPrefix: 'municipality',
-          sourceId: 'municipalities',
-          geoJsonPath: '/geoJSON/Municipal_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
-          csvPath: '/data-csvs/Municipality_data.csv',
-          fillColor: 'rgba(100, 240, 200, 0.22)',
-          lineColor: 'rgba(100, 240, 200, 1)',
-        },
-      },
+        {
+          id: 'municipalities',
+          name: 'Municipality Data',
+          geoJsonUrl: 'geoJSON/Municipal_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
+          csvUrl: '/data-csvs/Total_Units_per_Comu.csv', 
+          fillColor: 'rgba(200, 100, 240, 0.22)',
+          lineColor: 'rgba(200, 100, 240, 1)',
+          lineWidth: 2,
+          visible: false
+        }
+      ],
+      csvDataLookup: {}
     };
   },
+
+
   mounted() {
-    this.initMap();
-  },
-  methods: {
-    async initMap() {
-      mapboxgl.accessToken = 'pk.eyJ1Ijoic2F2YW5hYmVuIiwiYSI6ImNsZTNobWs4YjA0eGkzcG1wZzhycjZrb3cifQ.4_Du3FBo2v9tdy2DZRhb6A';
-      const map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/light-v11',
-        center: [-74.7057, 40.1583],
-        zoom: 7
-      });
+  this.initMap().then(() => {
+    this.map.getCanvasContainer().addEventListener('mouseenter', () => {
+      this.$emit('disable-scrolling');
+    });
 
-      this.map = map;
-
-      map.on('load', async () => {
-        await this.addMapData(map, this.layers.county);
-        await this.addMapData(map, this.layers.municipality);
-
-        this.addMapInteractions(map, 'county-layer');
-        this.addMapInteractions(map, 'municipality-layer');
-      });
-    },
-
-    async addMapData(map, layerConfig) {
-      const csvDataLookup = await this.fetchCsvData(layerConfig.csvPath);
-      layerConfig.csvDataLookup = csvDataLookup;
-
-      map.addSource(layerConfig.sourceId, {
-        'type': 'geojson',
-        'data': layerConfig.geoJsonPath
-      });
-
-
-          map.addLayer({
-  'id': `${layerConfig.idPrefix}-layer`,
-  'type': 'fill',
-  'source': layerConfig.sourceId,
-  'paint': {
-    'fill-color': layerConfig.fillColor,
-  },
-  'layout': {
-    'visibility': layerConfig.idPrefix === 'county' ? 'visible' : 'none'
-  }
-});
-
-map.addLayer({
-  'id': `${layerConfig.idPrefix}-outline`,
-  'type': 'line',
-  'source': layerConfig.sourceId,
-  'paint': {
-    'line-color': layerConfig.lineColor,
-    'line-width': 2
-  },
-  'layout': {
-    'visibility': layerConfig.idPrefix === 'county' ? 'visible' : 'none'
-  }
-});
-
+    this.map.getCanvasContainer().addEventListener('mouseleave', () => {
+      this.$emit('enable-scrolling');
+    });
+  });
 },
 
-async fetchCsvData(csvUrl) {
+
+
+
+
+
+
+methods: {
+ 
+
+async initMap() {
+  mapboxgl.accessToken = 'pk.eyJ1Ijoic2F2YW5hYmVuIiwiYSI6ImNsZTNobWs4YjA0eGkzcG1wZzhycjZrb3cifQ.4_Du3FBo2v9tdy2DZRhb6A';
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/light-v11',
+    center: [-74.7057, 40.1583],
+    zoom: 7
+  });
+
+  this.map = map;
+
+  const basePath = process.env.NODE_ENV === 'production'
+    ? '/affordable-housing-viz-2/'
+    : '';
+
+  for (const layer of this.layers) {
+    if (layer.csvUrl) {
+      const lookup = await this.fetchCsvData(`${basePath}${layer.csvUrl}`, layer.id);
+      this.csvDataLookup[layer.id] = lookup;
+    }
+  }
+
+  return new Promise((resolve) => {
+    map.on('load', async () => {
+      for (const layer of this.layers) {
+        this.loadLayer(map, {
+          ...layer,
+          geoJsonUrl: `${basePath}${layer.geoJsonUrl}`,
+        });
+      }
+      resolve();
+    });
+  });
+},
+
+
+
+
+    async loadLayer(map, layerConfig) {
+      map.addSource(layerConfig.id, {
+        'type': 'geojson',
+        'data': layerConfig.geoJsonUrl
+      });
+
+      map.addLayer({
+        'id': `${layerConfig.id}-layer`,
+        'type': 'fill',
+        'source': layerConfig.id,
+        'paint': {
+          'fill-color': layerConfig.fillColor,
+        },
+        'layout': {
+          'visibility': layerConfig.visible ? 'visible' : 'none'
+        }
+      });
+
+      map.addLayer({
+        'id': `${layerConfig.id}-outline`,
+        'type': 'line',
+        'source': layerConfig.id,
+        'paint': {
+          'line-color': layerConfig.lineColor,
+          'line-width': layerConfig.lineWidth
+        },
+        'layout': {
+          'visibility': layerConfig.visible ? 'visible' : 'none'
+        }
+      });
+
+      this.addMapInteractions(map, layerConfig.id);
+    },
+
+
+    
+async fetchCsvData(csvUrl, layerId) {
   const response = await d3.csv(csvUrl);
   const lookup = {};
   response.forEach(row => {
-    lookup[row.COUNTY] = {
+    const key = layerId === 'municipalities' ? row.comuMerged : row.COUNTY;
+    lookup[key] = {
       column2: row.column2,
-      column3: row.column3
+      column3: row.column3,
+      units: row.units 
     };
   });
+
   return lookup;
 },
 
-addMapInteractions(map, layerId) {
-  map.on('click', layerId, (e) => {
-    const county = e.features[0].properties.COUNTY;
-    const countyLabel = e.features[0].properties.COUNTY_LABEL;
 
-    const rowData = this.layers[this.visibleLayer].csvDataLookup[county];
+
+
+
+
+getPopupContent(layerId, properties) {
+
+
+  if (layerId === 'states') {
+    const countyLabel = properties.COUNTY_LABEL;
+    const rowData = this.csvDataLookup[layerId][properties.COUNTY];
 
     let popupContent = `<strong>${countyLabel}</strong>`;
-
     if (rowData) {
       if (rowData.column2) {
         popupContent += `<br>Column 2: ${rowData.column2}`;
@@ -125,34 +182,93 @@ addMapInteractions(map, layerId) {
       }
     }
 
-    new mapboxgl.Popup()
+    return popupContent;
+  } else if (layerId === 'municipalities') {
+    const municipalityName = properties.NAME;
+    const rowData = this.csvDataLookup[layerId][properties.MUN_CODE]; 
+
+    let popupContent = `<strong>${municipalityName}</strong>`;
+    if (rowData && rowData.units) {
+      popupContent += `<br>Units: ${rowData.units}`;
+    }
+
+    return popupContent;
+  }
+},
+
+
+
+
+addMapInteractions(map, layerId) {
+  const layer = this.layers.find(l => l.id === layerId);
+
+
+  map.on('click', `${layerId}-layer`, (e) => {
+    // Check if the layer is visible
+    if (!layer.visible) {
+      return;
+    }
+
+    const properties = e.features[0].properties;
+    const popupContent = this.getPopupContent(layerId, properties);
+
+    // Close the current popup if it exists
+    if (this.currentPopup) {
+      this.currentPopup.remove();
+    }
+
+    // Create a new popup and store it in the currentPopup data property
+    this.currentPopup = new mapboxgl.Popup()
       .setLngLat(e.lngLat)
       .setHTML(popupContent)
       .addTo(map);
   });
 
-  map.on('mouseenter', layerId, () => {
+  map.on('mouseenter', `${layerId}-layer`, () => {
     map.getCanvas().style.cursor = 'pointer';
   });
 
-  map.on('mouseleave', layerId, () => {
+  map.on('mouseleave', `${layerId}-layer`, () => {
     map.getCanvas().style.cursor = '';
   });
 },
 
-toggleMapData() {
-  const map = this.map;
-  const nextVisibleLayer = this.visibleLayer === 'county' ? 'municipality' : 'county';
 
-  map.setLayoutProperty(`${this.layers[this.visibleLayer].idPrefix}-layer`, 'visibility', 'none');
-  map.setLayoutProperty(`${this.layers[this.visibleLayer].idPrefix}-outline`, 'visibility', 'none');
 
-  map.setLayoutProperty(`${this.layers[nextVisibleLayer].idPrefix}-layer`, 'visibility', 'visible');
-  map.setLayoutProperty(`${this.layers[nextVisibleLayer].idPrefix}-outline`, 'visibility', 'visible');
 
-  this.visibleLayer = nextVisibleLayer;
-},
+showMunicipalitiesLayer() {
+      const layerId = 'municipalities';
+      this.layers.forEach(layer => {
+        layer.visible = layer.id === layerId;
+        const visibility = layer.visible ? 'visible' : 'none';
+        this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
+        this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
+      });
+        // Close the current popup if it exists
+  if (this.currentPopup) {
+    this.currentPopup.remove();
+  }
+      this.addMapInteractions(this.map, layerId);
+    },
 
-},
+
+showCountiesLayer() {
+      const layerId = 'states';
+      this.layers.forEach(layer => {
+        layer.visible = layer.id === layerId;
+        const visibility = layer.visible ? 'visible' : 'none';
+        this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
+        this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
+      });
+        // Close the current popup if it exists
+  if (this.currentPopup) {
+    this.currentPopup.remove();
+  }
+      this.addMapInteractions(this.map, layerId);
+    }
+  },
 };
+
+
 </script>
+

@@ -1,5 +1,7 @@
 # housing-viz-prj
 
+pages link - https://savanaben.github.io/affordable-housing-viz-2/
+
 ## Project setup
 ```
 npm install
