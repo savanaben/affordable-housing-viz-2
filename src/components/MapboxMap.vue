@@ -1,12 +1,16 @@
 <template>
   <div>
     <!-- Change: Separate buttons for each layer -->
-    <button @click="showMunicipalitiesLayer" style="position: absolute; top: 20px; right: 20px; z-index: 9999;">
-      Municipalities
-    </button>
-    <button @click="showCountiesLayer" style="position: absolute; top: 50px; right: 20px; z-index: 9999;">
+    <button class="btn btn-primary mt-2" @click="showCountiesLayer" style="position: absolute; top: 20px; right: 20px; z-index: 9999;">
       Counties
     </button>
+    <button class="btn btn-primary mt-2" @click="showMunicipalitiesLayer" style="position: absolute; top: 60px; right: 20px; z-index: 9999;">
+      Municipalities
+    </button>
+    <button class="btn btn-primary mt-2" @click="showJacobsonLayer" style="position: absolute; top: 100px; right: 20px; z-index: 9999;">
+  Jacobson
+</button>
+
 
     <div id="map"></div>
   </div>
@@ -32,8 +36,8 @@ export default {
           geoJsonUrl: 'geoJSON/County_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
           csvUrl: '/data-csvs/County_data.csv',
           fillColor: 'rgba(200, 100, 240, 0.22)',
-          lineColor: 'rgba(200, 100, 240, 1)',
-          lineWidth: 2,
+          lineColor: '#3a3a3a',
+          lineWidth: 1,
           visible: true
         },
         {
@@ -42,9 +46,19 @@ export default {
           geoJsonUrl: 'geoJSON/Municipal_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
           csvUrl: '/data-csvs/Total_Units_per_Comu.csv', 
           fillColor: 'rgba(200, 100, 240, 0.22)',
-          lineColor: 'rgba(200, 100, 240, 1)',
-          lineWidth: 2,
+          lineColor: '#3a3a3a',
+          lineWidth: 1,
           visible: false
+        },
+        {
+           id: 'jacobson',
+           name: 'Jacobson Data',
+           geoJsonUrl: 'geoJSON/Municipal_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
+           csvUrl: '/data-csvs/Total_Units_per_Comu.csv',
+           fillColor: 'rgba(200, 100, 240, 0.22)',
+           lineColor: '#3a3a3a',
+           lineWidth: 1,
+           visible: false
         }
       ],
       csvDataLookup: {}
@@ -72,14 +86,14 @@ export default {
 
 methods: {
  
-
+  
 async initMap() {
   mapboxgl.accessToken = 'pk.eyJ1Ijoic2F2YW5hYmVuIiwiYSI6ImNsZTNobWs4YjA0eGkzcG1wZzhycjZrb3cifQ.4_Du3FBo2v9tdy2DZRhb6A';
   const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/light-v11',
-    center: [-74.7057, 40.1583],
-    zoom: 7
+    center: [-75.7057, 40.1583],
+    zoom: 7.3
   });
 
   this.map = map;
@@ -111,39 +125,39 @@ async initMap() {
 
 
 
-    async loadLayer(map, layerConfig) {
-      map.addSource(layerConfig.id, {
-        'type': 'geojson',
-        'data': layerConfig.geoJsonUrl
-      });
+async loadLayer(map, layerConfig) {
+  map.addSource(layerConfig.id, {
+    'type': 'geojson',
+    'data': layerConfig.geoJsonUrl
+  });
 
-      map.addLayer({
-        'id': `${layerConfig.id}-layer`,
-        'type': 'fill',
-        'source': layerConfig.id,
-        'paint': {
-          'fill-color': layerConfig.fillColor,
-        },
-        'layout': {
-          'visibility': layerConfig.visible ? 'visible' : 'none'
-        }
-      });
-
-      map.addLayer({
-        'id': `${layerConfig.id}-outline`,
-        'type': 'line',
-        'source': layerConfig.id,
-        'paint': {
-          'line-color': layerConfig.lineColor,
-          'line-width': layerConfig.lineWidth
-        },
-        'layout': {
-          'visibility': layerConfig.visible ? 'visible' : 'none'
-        }
-      });
-
-      this.addMapInteractions(map, layerConfig.id);
+  map.addLayer({
+    'id': `${layerConfig.id}-layer`,
+    'type': 'fill',
+    'source': layerConfig.id,
+    'paint': {
+      'fill-color': layerConfig.fillColor,
     },
+    'layout': {
+      'visibility': layerConfig.visible ? 'visible' : 'none'
+    }
+  });
+
+  map.addLayer({
+    'id': `${layerConfig.id}-outline`,
+    'type': 'line',
+    'source': layerConfig.id,
+    'paint': {
+      'line-color': layerConfig.lineColor,
+      'line-width': layerConfig.lineWidth
+    },
+    'layout': {
+      'visibility': layerConfig.visible ? 'visible' : 'none'
+    }
+  });
+
+  this.addMapInteractions(map, layerConfig); // Pass the entire layerConfig object
+},
 
 
     
@@ -151,12 +165,32 @@ async fetchCsvData(csvUrl, layerId) {
   const response = await d3.csv(csvUrl);
   const lookup = {};
   response.forEach(row => {
-    const key = layerId === 'municipalities' ? row.comuMerged : row.COUNTY;
-    lookup[key] = {
-      column2: row.column2,
-      column3: row.column3,
-      units: row.units 
-    };
+    if (layerId === 'municipalities') {
+  const key = row.comuMerged;
+  lookup[key] = {
+    column2: row.column2,
+    column3: row.column3,
+    units: row.units 
+  };
+} else if (layerId === 'jacobson') {
+  const key = row.comuMerged; // Assuming the 'jacobson' layer uses the same key as the 'municipalities' layer
+  lookup[key] = {
+    total: row["Total"],
+    priorRound: row["Prior Round Obligations (1987-1999)"],
+    presentNeed: row["Present Need (2015)"],
+    gapPresentNeed: row["Gap Present Need (2015)"],
+    prospectiveNeed: row["Prospective Need (2015-2025)"],
+    prospectiveGapPresent: row["Prospective + Gap Present"]
+  };
+} else {
+  const key = row.COUNTY;
+  lookup[key] = {
+    column2: row.column2,
+    column3: row.column3,
+    units: row.units 
+  };
+}
+
   });
 
   return lookup;
@@ -166,7 +200,7 @@ async fetchCsvData(csvUrl, layerId) {
 createDetailedHousingDataButton(municipalityName, comuMerged) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.classList.add('btn', 'btn-info', 'mt-2');
+  button.classList.add('btn', 'mt-2', 'btn-primary', 'btn-sm' );
   button.textContent = 'Detailed Housing Data';
   button.addEventListener('click', () => this.openHousingDataModal(municipalityName, comuMerged));
   return button;
@@ -176,36 +210,13 @@ createDetailedHousingDataButton(municipalityName, comuMerged) {
 
   // this is i think adding the data to the modal
   async openHousingDataModal(municipalityName, comuMerged) {
+  this.$emit('open-housing-data-modal', {
+    municipalityName,
+    comuMerged,
+    items: [],
+  });
+},
 
-    this.$emit('open-housing-data-modal', {
-      municipalityName,
-      comuMerged,
-    });
-
-    this.modalTitle = `${municipalityName} - Detailed Housing Data`;
-    
-    this.modalFields = [
-      { key: 'comuMerged', label: 'Municipality Code' },
-      { key: 'development / aka', label: 'Development' },
-      { key: 'units', label: 'Units' },
-      { key: 'type', label: 'Type' },
-      { key: 'agent', label: 'Agent' },
-      { key: 'agent address', label: 'Agent Address' },
-      { key: 'website', label: 'Website' },
-      { key: 'source', label: 'Source' },
-      { key: 'zip', label: 'ZIP' },
-      { key: 'combinedPhone', label: 'Phone' },
-    ];
-    
-    const basePath = process.env.NODE_ENV === 'production'
-      ? '/affordable-housing-viz-2/'
-      : '';
-    
-    const csvData = await d3.csv(`${basePath}/data-csvs/Municipal-level-housing-data.csv`);
-    this.modalItems = csvData.filter(row => row.comuMerged === comuMerged);
-    
-    this.$refs.housingDataModal.showModal();
-  },
 
 
 
@@ -234,15 +245,15 @@ getPopupContent(layerId, properties) {
       }
     }
     return popupContent;
+  }
 
 
-
-  } else if (layerId === 'municipalities') {
+  else if (layerId === 'municipalities') {
   const municipalityName = properties.NAME;
   const rowData = this.csvDataLookup[layerId][properties.MUN_CODE]; 
 
   const popupContent = document.createElement('div');
-  popupContent.innerHTML = `<strong>${municipalityName}</strong>`;
+  popupContent.innerHTML = `<h5><strong>${municipalityName}</strong></h5>`;
   if (rowData && rowData.units) {
     const unitsElement = document.createElement('div');
     unitsElement.innerHTML = `Units: ${rowData.units}`;
@@ -254,13 +265,130 @@ getPopupContent(layerId, properties) {
 
   return popupContent;
   }
+
+
+ 
+  else if (layerId === 'jacobson') {
+  const municipalityName = properties.NAME;
+  const rowData = this.csvDataLookup[layerId][properties.MUN_CODE];
+
+  console.log('rowData', rowData); // First console log
+
+  const popupContent = document.createElement('div');
+  popupContent.innerHTML = `<h5><strong>${municipalityName}</strong></h5>`;
+  if (rowData) {
+    if (rowData.total) {
+      const totalElement = document.createElement('div');
+      totalElement.innerHTML = `<strong>Total: ${rowData.total}<strong>`;
+      popupContent.appendChild(totalElement);
+    }
+    if (rowData.priorRound) {
+      const priorRoundElement = document.createElement('div');
+      priorRoundElement.innerHTML = `Prior Round Obligations (1987-1999): ${rowData.priorRound}`;
+      popupContent.appendChild(priorRoundElement);
+    }
+    if (rowData.presentNeed) {
+      const presentNeedElement = document.createElement('div');
+      presentNeedElement.innerHTML = `Present Need (2015): ${rowData.presentNeed}`;
+      popupContent.appendChild(presentNeedElement);
+    }
+    if (rowData.gapPresentNeed) {
+      const gapPresentNeedElement = document.createElement('div');
+      gapPresentNeedElement.innerHTML = `Gap Present Need (2015): ${rowData.gapPresentNeed}`;
+      popupContent.appendChild(gapPresentNeedElement);
+    }
+    if (rowData.prospectiveNeed) {
+      const prospectiveNeedElement = document.createElement('div');
+      prospectiveNeedElement.innerHTML = `Prospective Need (2015-2025): ${rowData.prospectiveNeed}`;
+      popupContent.appendChild(prospectiveNeedElement);
+    }
+    if (rowData.prospectiveGapPresent) {
+      const prospectiveGapElement = document.createElement('div');
+      prospectiveGapElement.innerHTML = `Prospective + Gap Present: ${rowData.prospectiveGapPresent}`;
+      popupContent.appendChild(prospectiveGapElement);
+    }
+  }
+
+  else {
+      console.log('No rowData found for', properties.MUN_CODE); // Second console log
+  }
+
+  return popupContent;
+}
+
 },
 
 
 
 
-addMapInteractions(map, layerId) {
+ getColorSet(colorSetName) {
+  const colorSets = {
+    default: [
+      { value: 1, color: "#f7fcfd" },
+      { value: 5, color: "#e0ecf4" },
+      { value: 28, color: "#bfd3e6" },
+      { value: 149, color: "#9ebcda" },
+      { value: 791, color: "#8c96c6" },
+      { value: 4196, color: "#8856a7" },
+      { value: Infinity, color: "#810f7c" },
+    ],
+    jacobson: [
+    { value: 1, color: "#ffffcc" },
+      { value: 4, color: "#d9f0a3" },
+      { value: 17, color: "#addd8e" },
+      { value: 73, color: "#78c679" },
+      { value: 303, color: "#41ab5d" },
+      { value: 1266, color: "#238443" },
+      { value: Infinity, color: "#005a32" },
+    ],
+  };
+
+  return colorSets[colorSetName] || colorSets.default;
+},
+
+ getFillColor(units, colorSetName) {
+  const colorSet = this.getColorSet(colorSetName);
+  const value = parseInt(units, 10);
+  
+  for (const colorStop of colorSet) {
+    if (value <= colorStop.value) {
+      return colorStop.color;
+    }
+  }
+},
+
+
+addMapInteractions(map, layerConfig) {
+  const layerId = layerConfig.id;
   const layer = this.layers.find(l => l.id === layerId);
+
+
+
+// Update the fill-color property for the municipalities layer based on "units"
+if (layerId === 'municipalities') {
+  const expression = [
+    'match', ['get', 'MUN_CODE'],
+    ...Object.entries(this.csvDataLookup[layerId]).flatMap(([key, value]) => [key, this.getFillColor(value.units, 'default')]),
+    'rgba(0, 0, 0, 0)'
+  ];
+
+  map.setPaintProperty(`${layerId}-layer`, 'fill-color', expression);
+}
+
+// Update the fill-color property for the jacobson layer (based on "Total")
+if (layerId === 'jacobson') {
+  const expression = [
+    'match', ['get', 'MUN_CODE'],
+    ...Object.entries(this.csvDataLookup[layerId]).flatMap(([key, value]) => [key, this.getFillColor(value.total, 'jacobson')]),
+    'rgba(0, 0, 0, 0)'
+  ];
+
+  map.setPaintProperty(`${layerId}-layer`, 'fill-color', expression);
+}
+
+
+
+
 
 
   map.on('click', `${layerId}-layer`, (e) => {
@@ -282,17 +410,25 @@ addMapInteractions(map, layerId) {
       .setLngLat(e.lngLat)
       .setDOMContent(popupContent)
       .addTo(map);
-  });
 
+    // Check if the "Detailed Housing Data" button exists
+    const detailedHousingDataButton = popupContent.querySelector('button');
 
-  this.$nextTick(() => {
-  const detailedHousingDataBtn = document.getElementById('detailedHousingDataBtn');
-  if (detailedHousingDataBtn) {
-    detailedHousingDataBtn.addEventListener('click', () => {
-      this.openHousingDataModal(municipalityName, properties.MUN_CODE);
-    });
-  }
+    if (detailedHousingDataButton) {
+      // Add click event listener to the "Detailed Housing Data" button
+      detailedHousingDataButton.addEventListener('click', () => {
+  this.$emit('open-housing-data-modal', { municipalityName: properties.NAME, munCode: properties.MUN_CODE });
 });
+
+
+      // detailedHousingDataButton.addEventListener('click', () => {
+      //   this.openHousingDataModal(properties.NAME, properties.MUN_CODE);
+      // });
+
+
+
+    }
+  });
 
   map.on('mouseenter', `${layerId}-layer`, () => {
     map.getCanvas().style.cursor = 'pointer';
@@ -321,6 +457,24 @@ showMunicipalitiesLayer() {
       this.addMapInteractions(this.map, layerId);
     },
 
+    showJacobsonLayer() {
+  const layerId = 'jacobson';
+  this.layers.forEach(layer => {
+    layer.visible = layer.id === layerId;
+    const visibility = layer.visible ? 'visible' : 'none';
+    this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
+    this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
+  });
+
+  // Close the current popup if it exists
+  if (this.currentPopup) {
+    this.currentPopup.remove();
+  }
+  
+  this.addMapInteractions(this.map, layerId);
+},
+
+
 
 showCountiesLayer() {
       const layerId = 'states';
@@ -338,7 +492,21 @@ showCountiesLayer() {
     }
   },
 };
-
-
 </script>
 
+
+<style>
+.mapboxgl-popup-content {
+  background: #fff;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.1);
+    padding: 10px 20px 10px 10px;
+    pointer-events: auto;
+    position: relative;
+    font-size: 1rem;
+    width: max-content;
+    max-width: 400px;
+}
+
+
+</style>

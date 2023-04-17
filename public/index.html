@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="icon" href="<%= BASE_URL %>favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Lora&display=swap" rel="stylesheet">
     <title><%= htmlWebpackPlugin.options.title %></title>
   </head>
   <body>
@@ -12,6 +13,21 @@
       <strong>We're sorry but <%= htmlWebpackPlugin.options.title %> doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
     </noscript>
     <div id="app"></div>
+    <!-- Add jQuery script here -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fullPage.js/3.1.2/fullpage.min.js" integrity="sha512-4rPgyv5iG0PZw8E+oRdfN/Gq+yilzt9rQ8YXHRhX0Kycz1QiU6Yl2N5F5e5zBHSw+5HXeC+iyTr7z6pD9Sjm7w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script>
+      window.jQuery = window.$ = jQuery;
+    </script>
     <!-- built files will be auto injected -->
   </body>
+
+  <style>
+body.disable-pointer-events {
+  pointer-events: none;
+}
+   
+  </style>
+           
 </html>
