@@ -11,6 +11,12 @@ import fullpage from 'fullpage.js';
 
 export default {
   name: 'FullPageWrapper',
+  props: {
+    options: {
+      type: Object,
+      default: () => ({}),
+    },
+  },
   data() {
     return {
       fullpageInstance: null,
@@ -30,13 +36,17 @@ export default {
 mounted() {
   this.$nextTick(() => {
     this.fullpageInstance = new fullpage(this.$refs.fullPageWrapper, {
-      // Add your fullPage.js options here
+      ...this.options,
       onLeave: (origin, destination, direction) => {
         this.$emit('onLeave', origin, destination, direction);
+      },
+      afterLoad: (origin, destination, direction) => {
+        this.$emit('afterLoad', origin, destination, direction);
       },
     });
   });
 },
+
 
 beforeUnmount() {
   if (this.fullpageInstance) {

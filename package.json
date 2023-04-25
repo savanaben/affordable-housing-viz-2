@@ -11,10 +11,12 @@
     "clean": "gh-pages-clean"
   },
   "dependencies": {
+    "@popperjs/core": "^2.11.7",
     "bootstrap": "^5.2.3",
     "bootstrap-vue": "^2.23.1",
     "core-js": "^3.8.3",
     "d3": "^7.8.2",
+    "d3-textwrap": "^3.0.0",
     "fullpage.js": "^4.0.19",
     "gh-pages": "^5.0.0",
     "jquery": "^3.6.4",

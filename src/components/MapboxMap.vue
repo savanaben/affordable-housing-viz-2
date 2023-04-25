@@ -1,18 +1,23 @@
 <template>
   <div>
     <!-- Change: Separate buttons for each layer -->
-    <button class="btn btn-primary mt-2" @click="showCountiesLayer" style="position: absolute; top: 20px; right: 20px; z-index: 9999;">
-      Counties
-    </button>
-    <button class="btn btn-primary mt-2" @click="showMunicipalitiesLayer" style="position: absolute; top: 60px; right: 20px; z-index: 9999;">
+
+    <button class="btn btn-primary mt-2" @click="showJacobsonLayer" style="position: absolute; top: 20px; right: 20px; z-index: 9999; background-color: #ae017e; border-color: #ae017e;">
+    Mt. Laurel
+   </button>
+
+    <button class="btn btn-primary mt-2" @click="showMunicipalitiesLayer" style="position: absolute; top: 60px; right: 20px; z-index: 9999; background-color: #238443; border-color: #238443;">
       Municipalities
     </button>
-    <button class="btn btn-primary mt-2" @click="showJacobsonLayer" style="position: absolute; top: 100px; right: 20px; z-index: 9999;">
-  Jacobson
-</button>
+
+    <button class="btn btn-primary mt-2" @click="showCountiesLayer" style="position: absolute; top: 100px; right: 20px; z-index: 9999; background-color: #cc4c02; border-color: #cc4c02;">
+      Counties
+    </button>
 
 
-    <div id="map"></div>
+
+
+    <div id="map" style="pointer-events"></div>
   </div>
 </template>
 
@@ -34,9 +39,10 @@ export default {
           id: 'states',
           name: 'County Data',
           geoJsonUrl: 'geoJSON/County_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
-          csvUrl: '/data-csvs/County_data.csv',
+          csvUrl: '/data-csvs/MODIFIED_renter_household_income_filtered copy.csv',
           fillColor: 'rgba(200, 100, 240, 0.22)',
           lineColor: '#3a3a3a',
+          colorSetName: 'states',
           lineWidth: 1,
           visible: true
         },
@@ -47,6 +53,7 @@ export default {
           csvUrl: '/data-csvs/Total_Units_per_Comu.csv', 
           fillColor: 'rgba(200, 100, 240, 0.22)',
           lineColor: '#3a3a3a',
+          colorSetName: 'municipalities',
           lineWidth: 1,
           visible: false
         },
@@ -55,6 +62,7 @@ export default {
            name: 'Jacobson Data',
            geoJsonUrl: 'geoJSON/Municipal_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
            csvUrl: '/data-csvs/Total_Units_per_Comu.csv',
+           colorSetName: 'jacobson',
            fillColor: 'rgba(200, 100, 240, 0.22)',
            lineColor: '#3a3a3a',
            lineWidth: 1,
@@ -168,8 +176,6 @@ async fetchCsvData(csvUrl, layerId) {
     if (layerId === 'municipalities') {
   const key = row.comuMerged;
   lookup[key] = {
-    column2: row.column2,
-    column3: row.column3,
     units: row.units 
   };
 } else if (layerId === 'jacobson') {
@@ -182,12 +188,11 @@ async fetchCsvData(csvUrl, layerId) {
     prospectiveNeed: row["Prospective Need (2015-2025)"],
     prospectiveGapPresent: row["Prospective + Gap Present"]
   };
-} else {
+} else if (layerId === 'states') {
   const key = row.COUNTY;
   lookup[key] = {
-    column2: row.column2,
-    column3: row.column3,
-    units: row.units 
+    OccupiedRentalHousingUnits: row["Occupied rental housing units"],
+    Moderate_LMI_estimate: row.Moderate_LMI_estimate,
   };
 }
 
@@ -231,19 +236,20 @@ getPopupContent(layerId, properties) {
     const rowData = this.csvDataLookup[layerId][properties.COUNTY];
 
     const popupContent = document.createElement('div');
-    popupContent.innerHTML = `<strong>${countyLabel}</strong>`;
+    popupContent.innerHTML = `<h5><strong>${countyLabel}</strong></h5>`;
     if (rowData) {
-      if (rowData.column2) {
-        const column2Element = document.createElement('div');
-        column2Element.innerHTML = `Column 2: ${rowData.column2}`;
-        popupContent.appendChild(column2Element);
-      }
-      if (rowData.column3) {
-        const column3Element = document.createElement('div');
-        column3Element.innerHTML = `Column 3: ${rowData.column3}`;
-        popupContent.appendChild(column3Element);
+      if (rowData.Moderate_LMI_estimate) {
+        const Moderate_LMI_estimateElement = document.createElement('div');
+        Moderate_LMI_estimateElement.innerHTML = `Moderate, low, and very low <br>income household: <br> <h5>${rowData.Moderate_LMI_estimate}</h5>`;
+        popupContent.appendChild(Moderate_LMI_estimateElement);
       }
     }
+      if (rowData.OccupiedRentalHousingUnits) {
+        const OccupiedRentalHousingUnitsElement = document.createElement('div');
+        OccupiedRentalHousingUnitsElement.innerHTML = `Total rental households: ${rowData.OccupiedRentalHousingUnits}`;
+        popupContent.appendChild(OccupiedRentalHousingUnitsElement);
+      }
+
     return popupContent;
   }
 
@@ -253,10 +259,11 @@ getPopupContent(layerId, properties) {
   const rowData = this.csvDataLookup[layerId][properties.MUN_CODE]; 
 
   const popupContent = document.createElement('div');
-  popupContent.innerHTML = `<h5><strong>${municipalityName}</strong></h5>`;
+  popupContent.innerHTML = `<h5><strong>${municipalityName}</strong></h5><h6>Existing Affordable <br> Households (2022)</h6>`;
+
   if (rowData && rowData.units) {
     const unitsElement = document.createElement('div');
-    unitsElement.innerHTML = `Units: ${rowData.units}`;
+    unitsElement.innerHTML = `<h5>Total: ${rowData.units}</h5>`;
     popupContent.appendChild(unitsElement);
   }
 
@@ -324,22 +331,31 @@ getPopupContent(layerId, properties) {
  getColorSet(colorSetName) {
   const colorSets = {
     default: [
-      { value: 1, color: "#f7fcfd" },
-      { value: 5, color: "#e0ecf4" },
-      { value: 28, color: "#bfd3e6" },
-      { value: 149, color: "#9ebcda" },
-      { value: 791, color: "#8c96c6" },
-      { value: 4196, color: "#8856a7" },
-      { value: Infinity, color: "#810f7c" },
+      { value: 1, color: "#ffffcc" },
+      { value: 5, color: "#d9f0a3" },
+      { value: 28, color: "#addd8e" },
+      { value: 149, color: "#78c679" },
+      { value: 791, color: "#41ab5d" },
+      { value: 4196, color: "#238443" },
+      { value: Infinity, color: "#005a32" },
     ],
     jacobson: [
-    { value: 1, color: "#ffffcc" },
-      { value: 4, color: "#d9f0a3" },
-      { value: 17, color: "#addd8e" },
-      { value: 73, color: "#78c679" },
-      { value: 303, color: "#41ab5d" },
-      { value: 1266, color: "#238443" },
-      { value: Infinity, color: "#005a32" },
+    { value: 1, color: "#feebe2" },
+      { value: 40, color: "#fcc5c0" },
+      { value: 100, color: "#fa9fb5" },
+      { value: 350, color: "#f768a1" },
+      { value: 703, color: "#dd3497" },
+      { value: 1466, color: "#ae017e" },
+      { value: Infinity, color: "#7a0177" },
+    ],
+    states: [
+      { value: 4366, color: "#ffffd4" },
+      { value: 7714, color: "#fee391" },
+      { value: 13629, color: "#fec44f" },
+      { value: 24080, color: "#fe9929" },
+      { value: 42545, color: "#ec7014" },
+      { value: 75170, color: "#cc4c02" },
+      { value: Infinity, color: "#8c2d04" },
     ],
   };
 
@@ -352,6 +368,7 @@ getPopupContent(layerId, properties) {
   
   for (const colorStop of colorSet) {
     if (value <= colorStop.value) {
+
       return colorStop.color;
     }
   }
@@ -362,29 +379,49 @@ addMapInteractions(map, layerConfig) {
   const layerId = layerConfig.id;
   const layer = this.layers.find(l => l.id === layerId);
 
+  // Update the fill-color property for the municipalities layer based on "units"
+  if (layerId === 'municipalities') {
+    const expression = [
+      'match', ['get', 'MUN_CODE'],
+      ...Object.entries(this.csvDataLookup[layerId]).flatMap(([key, value]) => {
+        const fillColor = this.getFillColor(value.units, 'default');
+        return fillColor ? [key, fillColor] : [];
+      }),
+      'rgba(0, 0, 0, 0)'
+    ];
+
+    map.setPaintProperty(`${layerId}-layer`, 'fill-color', expression);
+  }
+
+  // Update the fill-color property for the states layer based on "Moderate_LMI_estimate"
+  if (layerId === 'states') {
+    const expression = [
+      'match', ['get', 'COUNTY'],
+      ...Object.entries(this.csvDataLookup[layerId]).flatMap(([key, value]) => {
+        const fillColor = this.getFillColor(parseInt(value.Moderate_LMI_estimate), 'states');
+        return fillColor ? [key, fillColor] : [];
+      }),
+      'rgba(0, 0, 0, 0)'
+    ];
+
+    map.setPaintProperty(`${layerId}-layer`, 'fill-color', expression);
+  }
+
+  // Update the fill-color property for the jacobson layer (based on "Total")
+  if (layerId === 'jacobson') {
+    const expression = [
+      'match', ['get', 'MUN_CODE'],
+      ...Object.entries(this.csvDataLookup[layerId]).flatMap(([key, value]) => {
+        const fillColor = this.getFillColor(value.total, 'jacobson');
+        return fillColor ? [key, fillColor] : [];
+      }),
+      'rgba(0, 0, 0, 0)'
+    ];
+
+    map.setPaintProperty(`${layerId}-layer`, 'fill-color', expression);
+  }
 
 
-// Update the fill-color property for the municipalities layer based on "units"
-if (layerId === 'municipalities') {
-  const expression = [
-    'match', ['get', 'MUN_CODE'],
-    ...Object.entries(this.csvDataLookup[layerId]).flatMap(([key, value]) => [key, this.getFillColor(value.units, 'default')]),
-    'rgba(0, 0, 0, 0)'
-  ];
-
-  map.setPaintProperty(`${layerId}-layer`, 'fill-color', expression);
-}
-
-// Update the fill-color property for the jacobson layer (based on "Total")
-if (layerId === 'jacobson') {
-  const expression = [
-    'match', ['get', 'MUN_CODE'],
-    ...Object.entries(this.csvDataLookup[layerId]).flatMap(([key, value]) => [key, this.getFillColor(value.total, 'jacobson')]),
-    'rgba(0, 0, 0, 0)'
-  ];
-
-  map.setPaintProperty(`${layerId}-layer`, 'fill-color', expression);
-}
 
 
 

@@ -9,7 +9,8 @@
           </button>
         </div>
         <div class="modal-body sticky-padding-fix">
-          <h1>test title</h1>
+          <h4>The following housing data is from the NJ Division of Codes and Standards 2022 List of <a href="https://www.nj.gov/dca/divisions/codes/publications/developments.html">Affordable Developments by County</a>. 
+          </h4>
           <table class="table table-responsive table-sticky-header">
             <thead>
               <tr>
