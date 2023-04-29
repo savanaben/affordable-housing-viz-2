@@ -62,6 +62,7 @@
       d3.forceLink(this.data.links).id((d) => d.id).distance(50)
     )
     .force("charge", d3.forceManyBody().strength(20))
+    .force("collide", d3.forceCollide(45))
     .force("center", d3.forceCenter(width / 2, height / 2).strength(1.9));
 
   // Add the following lines for the label simulation
