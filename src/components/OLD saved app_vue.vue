@@ -1,544 +1,491 @@
+<!-- App.vue -->
 <template>
-  <div>
-    <!-- Change: Separate buttons for each layer -->
-    <button class="btn btn-primary mt-2" @click="showCountiesLayer" style="position: absolute; top: 20px; right: 20px; z-index: 9999;">
-      Counties
-    </button>
-    <button class="btn btn-primary mt-2" @click="showMunicipalitiesLayer" style="position: absolute; top: 60px; right: 20px; z-index: 9999;">
-      Municipalities
-    </button>
-    <button class="btn btn-primary mt-2" @click="showJacobsonLayer" style="position: absolute; top: 100px; right: 20px; z-index: 9999;">
-  Jacobson
-</button>
-
-
-    <div id="map" style="pointer-events"></div>
-  </div>
-</template>
-
-<script>
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import * as d3 from 'd3';
-
-export default {
-  name: 'MapboxMap',
-  components: {
-  },
-  data() {
-    return {
-      map: null,
-      currentPopup: null,
-      layers: [
-        {
-          id: 'states',
-          name: 'County Data',
-          geoJsonUrl: 'geoJSON/County_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
-          csvUrl: '/data-csvs/MODIFIED_renter_household_income_filtered copy.csv',
-          fillColor: 'rgba(200, 100, 240, 0.22)',
-          lineColor: '#3a3a3a',
-          colorSetName: 'states',
-          lineWidth: 1,
-          visible: true
-        },
-        {
-          id: 'municipalities',
-          name: 'Municipality Data',
-          geoJsonUrl: 'geoJSON/Municipal_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
-          csvUrl: '/data-csvs/Total_Units_per_Comu.csv', 
-          fillColor: 'rgba(200, 100, 240, 0.22)',
-          lineColor: '#3a3a3a',
-          colorSetName: 'municipalities',
-          lineWidth: 1,
-          visible: false
-        },
-        {
-           id: 'jacobson',
-           name: 'Jacobson Data',
-           geoJsonUrl: 'geoJSON/Municipal_Boundaries_of_NJ2C_Hosted2C_3857.geojson',
-           csvUrl: '/data-csvs/Total_Units_per_Comu.csv',
-           colorSetName: 'jacobson',
-           fillColor: 'rgba(200, 100, 240, 0.22)',
-           lineColor: '#3a3a3a',
-           lineWidth: 1,
-           visible: false
-        }
-      ],
-      csvDataLookup: {}
-    };
-  },
-
-
-  mounted() {
-  this.initMap().then(() => {
-    this.map.getCanvasContainer().addEventListener('mouseenter', () => {
-      this.$emit('disable-scrolling');
-    });
-
-    this.map.getCanvasContainer().addEventListener('mouseleave', () => {
-      this.$emit('enable-scrolling');
-    });
-  });
-},
-
-
-
-
-
-
-
-methods: {
+ 
+  <MapboxMap
+       v-if ="showMap"
+       ref="mapboxMap"
+       @open-housing-data-modal="handleHousingDataModal"
+       :class="{ 'map-container': true, 'visible': isMapVisible }"
+     />
  
   
-async initMap() {
-  mapboxgl.accessToken = 'pk.eyJ1Ijoic2F2YW5hYmVuIiwiYSI6ImNsZTNobWs4YjA0eGkzcG1wZzhycjZrb3cifQ.4_Du3FBo2v9tdy2DZRhb6A';
-  const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/light-v11',
-    center: [-75.7057, 40.1583],
-    zoom: 7.3
-  });
-
-  this.map = map;
-
-  const basePath = process.env.NODE_ENV === 'production'
-    ? '/affordable-housing-viz-2/'
-    : '';
-
-  for (const layer of this.layers) {
-    if (layer.csvUrl) {
-      const lookup = await this.fetchCsvData(`${basePath}${layer.csvUrl}`, layer.id);
-      this.csvDataLookup[layer.id] = lookup;
-    }
-  }
-
-  return new Promise((resolve) => {
-    map.on('load', async () => {
-      for (const layer of this.layers) {
-        this.loadLayer(map, {
-          ...layer,
-          geoJsonUrl: `${basePath}${layer.geoJsonUrl}`,
-        });
-      }
-      resolve();
-    });
-  });
-},
+   <FullPageWrapper :options="fullPageOptions" @onLeave="onSectionLeave">
+  
+   <FullPageSection>
+    <div class="p-5 bg-image1">
+      <MapOverlay class="map-overlay-full-top" 
+        title='The Story of Affordable Housing in NJ'
+        content='<i>An extremely abridged history and today&#39;s current need.</i>'
+        />
+    </div>
+  </FullPageSection>
+  
 
 
-
-
-async loadLayer(map, layerConfig) {
-  map.addSource(layerConfig.id, {
-    'type': 'geojson',
-    'data': layerConfig.geoJsonUrl
-  });
-
-  map.addLayer({
-    'id': `${layerConfig.id}-layer`,
-    'type': 'fill',
-    'source': layerConfig.id,
-    'paint': {
-      'fill-color': layerConfig.fillColor,
-    },
-    'layout': {
-      'visibility': layerConfig.visible ? 'visible' : 'none'
-    }
-  });
-
-  map.addLayer({
-    'id': `${layerConfig.id}-outline`,
-    'type': 'line',
-    'source': layerConfig.id,
-    'paint': {
-      'line-color': layerConfig.lineColor,
-      'line-width': layerConfig.lineWidth
-    },
-    'layout': {
-      'visibility': layerConfig.visible ? 'visible' : 'none'
-    }
-  });
-
-  this.addMapInteractions(map, layerConfig); // Pass the entire layerConfig object
-},
-
-
-    
-async fetchCsvData(csvUrl, layerId) {
-  const response = await d3.csv(csvUrl);
-  const lookup = {};
-  response.forEach(row => {
-    if (layerId === 'municipalities') {
-  const key = row.comuMerged;
-  lookup[key] = {
-    units: row.units 
-  };
-} else if (layerId === 'jacobson') {
-  const key = row.comuMerged; // Assuming the 'jacobson' layer uses the same key as the 'municipalities' layer
-  lookup[key] = {
-    total: row["Total"],
-    priorRound: row["Prior Round Obligations (1987-1999)"],
-    presentNeed: row["Present Need (2015)"],
-    gapPresentNeed: row["Gap Present Need (2015)"],
-    prospectiveNeed: row["Prospective Need (2015-2025)"],
-    prospectiveGapPresent: row["Prospective + Gap Present"]
-  };
-} else if (layerId === 'states') {
-  const key = row.COUNTY;
-  lookup[key] = {
-    OccupiedRentalHousingUnits: row["Occupied rental housing units"],
-    Moderate_LMI_estimate: row.Moderate_LMI_estimate,
-  };
-}
-
-  });
-
-  return lookup;
-},
-
-//this is helping create the modal button
-createDetailedHousingDataButton(municipalityName, comuMerged) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.classList.add('btn', 'mt-2', 'btn-primary', 'btn-sm' );
-  button.textContent = 'Detailed Housing Data';
-  button.addEventListener('click', () => this.openHousingDataModal(municipalityName, comuMerged));
-  return button;
-},
-
-
-
-  // this is i think adding the data to the modal
-  async openHousingDataModal(municipalityName, comuMerged) {
-  this.$emit('open-housing-data-modal', {
-    municipalityName,
-    comuMerged,
-    items: [],
-  });
-},
-
-
-
-
-
-
-
-getPopupContent(layerId, properties) {
-
-
-  if (layerId === 'states') {
-    const countyLabel = properties.COUNTY_LABEL;
-    const rowData = this.csvDataLookup[layerId][properties.COUNTY];
-
-    const popupContent = document.createElement('div');
-    popupContent.innerHTML = `<h5><strong>${countyLabel}</strong></h5>`;
-    if (rowData) {
-      if (rowData.Moderate_LMI_estimate) {
-        const Moderate_LMI_estimateElement = document.createElement('div');
-        Moderate_LMI_estimateElement.innerHTML = `Moderate, low, and very low <br>income household: <br> <h5>${rowData.Moderate_LMI_estimate}</h5>`;
-        popupContent.appendChild(Moderate_LMI_estimateElement);
-      }
-    }
-      if (rowData.OccupiedRentalHousingUnits) {
-        const OccupiedRentalHousingUnitsElement = document.createElement('div');
-        OccupiedRentalHousingUnitsElement.innerHTML = `Total rental households: ${rowData.OccupiedRentalHousingUnits}`;
-        popupContent.appendChild(OccupiedRentalHousingUnitsElement);
-      }
-
-    return popupContent;
-  }
-
-
-  else if (layerId === 'municipalities') {
-  const municipalityName = properties.NAME;
-  const rowData = this.csvDataLookup[layerId][properties.MUN_CODE]; 
-
-  const popupContent = document.createElement('div');
-  popupContent.innerHTML = `<h5><strong>${municipalityName}</strong></h5><h6>Existing Affordable <br> Households (2022)</h6>`;
-
-  if (rowData && rowData.units) {
-    const unitsElement = document.createElement('div');
-    unitsElement.innerHTML = `<h5>Total: ${rowData.units}</h5>`;
-    popupContent.appendChild(unitsElement);
-  }
-
-  const button = this.createDetailedHousingDataButton(municipalityName, properties.MUN_CODE);
-  popupContent.appendChild(button);
-
-  return popupContent;
-  }
+  <!-- <FullPageSection class="pointer-events-off">
+   <HorizontalBarGraph :data="barData" :visibleBars="[true, true, true]" />
+  </FullPageSection> -->
 
 
  
-  else if (layerId === 'jacobson') {
-  const municipalityName = properties.NAME;
-  const rowData = this.csvDataLookup[layerId][properties.MUN_CODE];
-
-  console.log('rowData', rowData); // First console log
-
-  const popupContent = document.createElement('div');
-  popupContent.innerHTML = `<h5><strong>${municipalityName}</strong></h5>`;
-  if (rowData) {
-    if (rowData.total) {
-      const totalElement = document.createElement('div');
-      totalElement.innerHTML = `<strong>Total: ${rowData.total}<strong>`;
-      popupContent.appendChild(totalElement);
-    }
-    if (rowData.priorRound) {
-      const priorRoundElement = document.createElement('div');
-      priorRoundElement.innerHTML = `Prior Round Obligations (1987-1999): ${rowData.priorRound}`;
-      popupContent.appendChild(priorRoundElement);
-    }
-    if (rowData.presentNeed) {
-      const presentNeedElement = document.createElement('div');
-      presentNeedElement.innerHTML = `Present Need (2015): ${rowData.presentNeed}`;
-      popupContent.appendChild(presentNeedElement);
-    }
-    if (rowData.gapPresentNeed) {
-      const gapPresentNeedElement = document.createElement('div');
-      gapPresentNeedElement.innerHTML = `Gap Present Need (2015): ${rowData.gapPresentNeed}`;
-      popupContent.appendChild(gapPresentNeedElement);
-    }
-    if (rowData.prospectiveNeed) {
-      const prospectiveNeedElement = document.createElement('div');
-      prospectiveNeedElement.innerHTML = `Prospective Need (2015-2025): ${rowData.prospectiveNeed}`;
-      popupContent.appendChild(prospectiveNeedElement);
-    }
-    if (rowData.prospectiveGapPresent) {
-      const prospectiveGapElement = document.createElement('div');
-      prospectiveGapElement.innerHTML = `Prospective + Gap Present: ${rowData.prospectiveGapPresent}`;
-      popupContent.appendChild(prospectiveGapElement);
-    }
-  }
-
-  else {
-      console.log('No rowData found for', properties.MUN_CODE); // Second console log
-  }
-
-  return popupContent;
-}
-
-},
-
-
-
-
- getColorSet(colorSetName) {
-  const colorSets = {
-    default: [
-      { value: 1, color: "#ffffcc" },
-      { value: 5, color: "#d9f0a3" },
-      { value: 28, color: "#addd8e" },
-      { value: 149, color: "#78c679" },
-      { value: 791, color: "#41ab5d" },
-      { value: 4196, color: "#238443" },
-      { value: Infinity, color: "#005a32" },
-    ],
-    jacobson: [
-    { value: 1, color: "#feebe2" },
-      { value: 40, color: "#fcc5c0" },
-      { value: 100, color: "#fa9fb5" },
-      { value: 350, color: "#f768a1" },
-      { value: 703, color: "#dd3497" },
-      { value: 1466, color: "#ae017e" },
-      { value: Infinity, color: "#7a0177" },
-    ],
-    states: [
-      { value: 4366, color: "#ffffd4" },
-      { value: 7714, color: "#fee391" },
-      { value: 13629, color: "#fec44f" },
-      { value: 24080, color: "#fe9929" },
-      { value: 42545, color: "#ec7014" },
-      { value: 75170, color: "#cc4c02" },
-      { value: Infinity, color: "#8c2d04" },
-    ],
-  };
-
-  return colorSets[colorSetName] || colorSets.default;
-},
-
- getFillColor(units, colorSetName) {
-  const colorSet = this.getColorSet(colorSetName);
-  const value = parseInt(units, 10);
+  <FullPageSection class="graph-container">
+   <MapOverlay class="map-overlay-full-top"
+        title='<h3>Affordable housing is a rich and complex network of driving forces.</h3>'
+        content=''
+        />
+   <ForceDirectedGraph :data="graphData" />
+ </FullPageSection>
+ 
+ 
+ 
+ <!-- two column layout -->
+ <FullPageSection>
+   <div class="container-fluid">
+     <div class="row">
+       <div :class="{ 'col-md-6': true, 'two-column-left': true }">
+         <div class="p-5">
+           <br>
+           <h2>From The landmark 1975 Mount Laurel Doctrine, which held that every town in the state must provide its “fair share” of the regional need for affordable housing…</h2>
+              <br>
+                  <p class="fs-4"><i>“As a developing municipality, Mount Laurel must, by its land use regulations, make realistically possible the opportunity for an appropriate variety and choice of housing for all categories of people who may desire to live there, of course including those of low and moderate income.”</i></p>
+ 
+                  <footer class="blockquote-footer text-end"><cite title="Source Title"><h6>Exerpt from The Mount Laurel Doctrine.<br>Southern Burlington County NAACP v. Township of Mount Laurel (67 N.J. 151, 1975)</h6></cite></footer>
+                
+                  <br>
+                </div>
+              </div>
+              <div class="col-md-6">
+   <div class="bg-image2 two-column-right"></div>
+ </div>
+            </div>
+          </div>
+        </FullPageSection> 
   
-  for (const colorStop of colorSet) {
-    if (value <= colorStop.value) {
-
-      return colorStop.color;
-    }
-  }
-},
-
-
-addMapInteractions(map, layerConfig) {
-  const layerId = layerConfig.id;
-  const layer = this.layers.find(l => l.id === layerId);
-
-  // Update the fill-color property for the municipalities layer based on "units"
-  if (layerId === 'municipalities') {
-    const expression = [
-      'match', ['get', 'MUN_CODE'],
-      ...Object.entries(this.csvDataLookup[layerId]).flatMap(([key, value]) => {
-        const fillColor = this.getFillColor(value.units, 'default');
-        return fillColor ? [key, fillColor] : [];
-      }),
-      'rgba(0, 0, 0, 0)'
-    ];
-
-    map.setPaintProperty(`${layerId}-layer`, 'fill-color', expression);
-  }
-
-  // Update the fill-color property for the states layer based on "Moderate_LMI_estimate"
-  if (layerId === 'states') {
-    const expression = [
-      'match', ['get', 'COUNTY'],
-      ...Object.entries(this.csvDataLookup[layerId]).flatMap(([key, value]) => {
-        const fillColor = this.getFillColor(parseInt(value.Moderate_LMI_estimate), 'states');
-        return fillColor ? [key, fillColor] : [];
-      }),
-      'rgba(0, 0, 0, 0)'
-    ];
-
-    map.setPaintProperty(`${layerId}-layer`, 'fill-color', expression);
-  }
-
-  // Update the fill-color property for the jacobson layer (based on "Total")
-  if (layerId === 'jacobson') {
-    const expression = [
-      'match', ['get', 'MUN_CODE'],
-      ...Object.entries(this.csvDataLookup[layerId]).flatMap(([key, value]) => {
-        const fillColor = this.getFillColor(value.total, 'jacobson');
-        return fillColor ? [key, fillColor] : [];
-      }),
-      'rgba(0, 0, 0, 0)'
-    ];
-
-    map.setPaintProperty(`${layerId}-layer`, 'fill-color', expression);
-  }
+  
+        <FullPageSection>
+   <div class="container-fluid">
+     <div class="row">
+       <div :class="{ 'col-md-6': true, 'two-column-left': true }">
+         <div class="p-5">
+           <br>
+              <h2>…To the Fair Share Housing Center, a present-day organization fighting to ensure towns across NJ meet their Mount Laurel obligations.</h2>
+              <br>
+                  <p class="fs-4"><i>“Since 2015, Fair Share Housing Center has settled cases with more than 340 towns throughout New Jersey, which will lead to approximately 50,000 more affordable homes in the next decade.”</i></p>
+ 
+                  <footer class="blockquote-footer text-end"><cite title="Source Title"><h6>Fair Share Housing Center</h6></cite></footer>
+                  <br>
+                </div>
+              </div>
+              <div class="col-md-6 nopadding">
+   <div class="bg-image3 two-column-right"></div>
+ </div>
+            </div>
+          </div>
+        </FullPageSection> 
+ 
+ 
+  <FullPageSection class="pointer-events-off">
+   <MapOverlay 
+   class="map-overlay-half" 
+   title="Where do we stand now?" 
+   content="Based on 2017 court projections, Mount Laurel calls for <b>305,504</b> affordable homes across the state by 2025.">
+   <HorizontalBarGraph :data="barData" :visibleBars="[true, false, false]" />
+  </MapOverlay>
+  </FullPageSection>
+  
+ 
+  <FullPageSection class="pointer-events-off">
+    <MapOverlay 
+    class="map-overlay-half" 
+    title="" 
+    content="Based on 2022 estimates, we have <b>206,083</b> affordable homes… ">
+    <HorizontalBarGraph :data="barData" :visibleBars="[true, true, false]" />
+    </MapOverlay>
+  </FullPageSection>
+  
+  
+  <FullPageSection class="pointer-events-off">
+    <MapOverlay 
+    class="map-overlay-half" 
+    title="" 
+    content="<p>…Which meets <b>26%</b> of the need.</p><p>Roughly <b>797,109</b> renter households across the state are moderate to low income.</p>">
+    <HorizontalBarGraph :data="barData" :visibleBars="[true, true, true]" />
+    </MapOverlay>
+  </FullPageSection>
 
 
+      <FullPageSection>
+        <div class="container-fluid">
+            <div class="row">
+              <div class="col-md-2">
+              </div>
+              <div class="col-md-8">
+                <div class="p-5">
+                  <HorizontalBarGraph :data="barData" :visibleBars="[true, true, true]" />
 
-
-
-
-
-
-  map.on('click', `${layerId}-layer`, (e) => {
-    // Check if the layer is visible
-    if (!layer.visible) {
-      return;
-    }
-
-    const properties = e.features[0].properties;
-    const popupContent = this.getPopupContent(layerId, properties);
-
-    // Close the current popup if it exists
-    if (this.currentPopup) {
-      this.currentPopup.remove();
-    }
-
-    // Create a new popup and store it in the currentPopup data property
-    this.currentPopup = new mapboxgl.Popup()
-      .setLngLat(e.lngLat)
-      .setDOMContent(popupContent)
-      .addTo(map);
-
-    // Check if the "Detailed Housing Data" button exists
-    const detailedHousingDataButton = popupContent.querySelector('button');
-
-    if (detailedHousingDataButton) {
-      // Add click event listener to the "Detailed Housing Data" button
-      detailedHousingDataButton.addEventListener('click', () => {
-  this.$emit('open-housing-data-modal', { municipalityName: properties.NAME, munCode: properties.MUN_CODE });
-});
-
-
-      // detailedHousingDataButton.addEventListener('click', () => {
-      //   this.openHousingDataModal(properties.NAME, properties.MUN_CODE);
-      // });
+                  <h2 class="pt-3">The gap is large. But devoted organizations and advocates across the state are fighting for change by leveraging Mount Laurel, Section 8, Federal HUD money, and more. </h2>
+                <h2><b>Everyone can play a part...</b></h2>
+                </div>
+              </div>
+              <div class="col-md-2">
+              </div>
+            </div>
+          </div>
+      </FullPageSection>
+  
+      <FullPageSection>
+    <div class="p-5 bg-image4">
+      <MapOverlay class="map-overlay-full-bottom" 
+        title='… even if all you do is keep an open heart to denser smart housing built around you.'
+        content='Shown is the Merwick Stanworth community in Princeton. This community adds 56 affordable homes.</i>'>
+      </MapOverlay>
+    </div>
+   </FullPageSection>
 
 
 
-    }
-  });
-
-  map.on('mouseenter', `${layerId}-layer`, () => {
-    map.getCanvas().style.cursor = 'pointer';
-  });
-
-  map.on('mouseleave', `${layerId}-layer`, () => {
-    map.getCanvas().style.cursor = '';
-  });
-},
-
-
-
-
-showMunicipalitiesLayer() {
-      const layerId = 'municipalities';
-      this.layers.forEach(layer => {
-        layer.visible = layer.id === layerId;
-        const visibility = layer.visible ? 'visible' : 'none';
-        this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
-        this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
-      });
-        // Close the current popup if it exists
-  if (this.currentPopup) {
-    this.currentPopup.remove();
-  }
-      this.addMapInteractions(this.map, layerId);
+    </FullPageWrapper>
+  
+    <HousingDataModal ref="housingDataModal" :fields="modalFields" />
+  
+  </template>
+  
+  
+  <script>
+  import FullPageWrapper from './components/FullPageWrapper.vue';
+  import FullPageSection from './components/FullPageSection.vue';
+  import MapboxMap from './components/MapboxMap.vue';
+  import MapOverlay from './components/mapOverlay.vue';
+  import ForceDirectedGraph from "./components/ForceDirectedGraph.vue";
+  import HorizontalBarGraph from "./components/HorizontalBarGraph.vue";
+  import HousingDataModal from './components/HousingDataModal.vue';
+  import * as d3 from 'd3';
+  
+  export default {
+    name: 'App',
+    components: {
+      FullPageWrapper,
+      FullPageSection,
+      MapboxMap,
+      HousingDataModal,
+      HorizontalBarGraph,
+      ForceDirectedGraph,
+      MapOverlay,
     },
+    data() {
+      return {
+        modalTitle: '',
+        modalFields: [],
+        modalItems: [],
+        isMapClickable: false,
+        showMap: false,
+        isMapVisible: false,
+        graphData: {
+   nodes: [
+   {
+      id: "1",
+      name: "Public Entities",
+      radius: 20,
+      color: "#ae017e",
+      title: "Public Entities",
+      body: "Public Entities body text",
+      icon: "",
+    },
+     { id: "2", name: "New Jersey Department of Community Affairs", radius: 10, color: "#dd3497" },
+     { id: "3", name: "New Jersey Housing and Mortgage Finance Agency", radius: 10, color: "#dd3497" },
+     { id: "4", name: "New Jersey Redevelopment Authority", radius: 10, color: "#dd3497" },
+     { id: "13", name: "NJ Housing Resource Center", radius: 10, color: "#dd3497" },
 
-    showJacobsonLayer() {
-  const layerId = 'jacobson';
-  this.layers.forEach(layer => {
-    layer.visible = layer.id === layerId;
-    const visibility = layer.visible ? 'visible' : 'none';
-    this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
-    this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
-  });
 
-  // Close the current popup if it exists
-  if (this.currentPopup) {
-    this.currentPopup.remove();
+
+     { id: "5", name: "Private Entities", radius: 20, color: "#0570b0" },
+     { id: "6", name: "Housing and Community Development Network of New Jersey", radius: 10, color: "#3690c0" },
+     { id: "7", name: "New Jersey Future", radius: 10, color: "#3690c0" },
+     { id: "8", name: "Affordable Housing Professionals of New Jersey", radius: 10, color: "#3690c0" },
+     { id: "9", name: "Fair Share Housing Center ", radius: 10, color: "#3690c0" },
+
+
+
+     { id: "10", name: "Mount Laurel Doctrine", radius: 20, color: "#238443" },
+     { id: "11", name: "Builder's Remedy", radius: 10, color: "#41AB5D" },
+     { id: "12", name: "Rounds of Obligation", radius: 10, color: "#41AB5D" },
+
+
+   ],
+   links: [
+     { source: "1", target: "2", value: 1 },
+     { source: "1", target: "3", value: 1 },
+     { source: "1", target: "4", value: 1 },
+     { source: "1", target: "9", value: 1 },
+     { source: "1", target: "13", value: 1 },
+     { source: "5", target: "6", value: 1 },
+     { source: "5", target: "7", value: 1 },
+     { source: "5", target: "8", value: 1 },
+     { source: "5", target: "9", value: 1 },
+     { source: "10", target: "11", value: 1 },
+     { source: "10", target: "12", value: 1 },
+
+
+
+
+
+
+   ],
+     },
+ 
+     barData: [
+         { label: "Mt. Laurel Projections", value: 305504, color: "#ae017e" },
+         { label: "What we have", value: 206083, color: "#238443" },
+         { label: "What we need", value: 797109, color: "#cc4c02" },
+       ],
+       visibleBars: [true, true, true],
+ 
+ 
+        fullPageOptions: {
+        normalScrollElements: '.map-container',
+        },
+        
+ 
+ 
+ 
+ 
+ 
+      };
+    },
+  
+  
+    methods: {
+      async handleHousingDataModal({ municipalityName, munCode }) {
+    this.$refs.housingDataModal.modalTitle = municipalityName;
+    const basePath = process.env.NODE_ENV === 'production'
+      ? '/affordable-housing-viz-2/'
+      : '';
+    const csvData = await d3.csv(`${basePath}/data-csvs/Municipal-level-housing-data.csv`);
+    const data = csvData.filter(row => row.comuMerged === munCode);
+    this.modalFields = [
+   
+      { key: 'development / aka', label: 'Development' },
+      { key: 'units', label: 'Units' },
+      { key: 'type', label: 'Type' },
+      { key: 'tenure', label: 'Tenure' },
+      { key: 'agent', label: 'Agent' },
+      { key: 'agent address', label: 'Agent Address' },
+      { key: 'website', label: 'Website' },
+      { key: 'source', label: 'Source' },
+      { key: 'zip', label: 'ZIP' },
+      { key: 'combinedPhone', label: 'Phone' },
+    ];
+    this.$refs.housingDataModal.updateItems(data);
+    this.$refs.housingDataModal.showModal();
+  },
+  
+ 
+ 
+  // eslint-disable-next-line no-unused-vars
+  onSectionLeave(origin, destination, direction) {
+       if (destination.index === 4 || destination.index === 5 || destination.index === 6) {
+         this.showMap = true;
+         this.isMapVisible = true;
+       } else {
+         this.showMap = false;
+         this.isMapVisible = false;
+       }
+     },
+ 
+  
+  
+  
+    },
+  };
+  </script>
+  
+  
+  
+  <style>
+  
+  body { margin: 0; padding: 0; }
+  #map { position: absolute; 
+         top: 0; 
+         bottom: 0; 
+         height: 100%;
+         width: 100%;
+  
   }
   
-  this.addMapInteractions(this.map, layerId);
-},
-
-
-
-showCountiesLayer() {
-      const layerId = 'states';
-      this.layers.forEach(layer => {
-        layer.visible = layer.id === layerId;
-        const visibility = layer.visible ? 'visible' : 'none';
-        this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
-        this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
-      });
-        // Close the current popup if it exists
-  if (this.currentPopup) {
-    this.currentPopup.remove();
+  .mapboxgl-popup {
+      max-width: 400px;
+      font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
   }
-      this.addMapInteractions(this.map, layerId);
-    }
-  },
-};
-</script>
-
-
-<style>
-.mapboxgl-popup-content {
-  background: #fff;
-    border-radius: 3px;
-    box-shadow: 0 1px 2px rgba(0,0,0,.1);
-    padding: 10px 20px 10px 10px;
+  
+  body.no-scroll {
+    overflow: hidden !important;
+  }
+  
+  body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+  
+  .map-overlay-full-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    margin: 2%;
     pointer-events: auto;
+  }
+
+  .map-overlay-full-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    margin: 2%;
+    pointer-events: auto;
+  }
+
+
+  
+  .map-overlay-half {
+   position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    margin: 2%;
+    pointer-events: auto;
+   max-width: 50%;
+ }
+ 
+ 
+  .pointer-events-off {
+   pointer-events: none;
+ 
+ }
+ 
+ .map-overlay-full-top {
+   pointer-events: auto;
+ }
+ 
+ 
+ 
+ 
+ .map-container {
+   opacity: 0;
+   animation-fill-mode: forwards;
+ }
+ 
+ .map-container.visible {
+   animation-name: fadeIn;
+   animation-duration: 1.5s;
+ }
+ 
+ @keyframes fadeIn {
+   to {
+     opacity: 1;
+   }
+ }
+ 
+ 
+ 
+ 
+ @media (max-width: 767px) {
+     .two-column-left {
+       height: 50%;
+       position: absolute;
+       top: 0;
+       left: 0;
+       right: 0;
+     }
+ 
+     .two-column-right {
+   display: flex;
+   flex-direction: column;
+   flex-grow: 1;
+ }
+   }
+ 
+ 
+ 
+  </style>
+ 
+ 
+ 
+ <style scoped>
+  .bg-image1 {
+    background-image: url('Merwick-Stanworth - Torti Gallas and Partners.svg');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
     position: relative;
-    font-size: 1rem;
-    width: max-content;
-    max-width: 400px;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+  }
+ 
+ 
+  .bg-image2 {
+   background-image: url('assets/MtLuarelNYTimage.jfif');
+   background-position: center;
+   background-repeat: no-repeat;
+   background-size: contain;
+   width: 100%;
+   height: 100%;
+   position: relative;
+   padding-left: 10%;
+   padding-right: 10%;
+ }
+ 
+ .bg-image3 {
+   background-image: url('assets/FSHC Background.jpg');
+ 
+   background-repeat: inherit;
+   background-size: cover;
+ 
+   height: 100vh;
+   position: relative;
+ }
+
+
+
+ .bg-image4 {
+    background-image: url('assets/princeton housing.jpg');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+   
+  }
+ 
+ .nopadding {
+    padding: 0 !important;
+    margin: 0 !important;
+ }
+ 
+ 
+ 
+ .graph-container {
+   position: relative;
+   width: 100vw;
+   height: 100vh;
+ }
+
+
+
+ .fade-enter-active,
+.fade-leave-active {
+  transition: opacity 1s ease;
 }
 
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
 
-</style>
+ </style>
+ 

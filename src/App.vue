@@ -8,6 +8,17 @@
        :class="{ 'map-container': true, 'visible': isMapVisible }"
      />
  
+ 
+
+
+   <MapOverlay 
+   v-if="showMapOverlay"
+   class="map-overlay-half" 
+   title="Where do we stand now?" 
+   content="Based on 2017 court projections, Mount Laurel calls for <b>305,504</b> affordable homes across the state by 2025.">
+   <HorizontalBarGraph :data="barData" :visibleBars="[true, false, false]" />
+  </MapOverlay>
+
   
    <FullPageWrapper :options="fullPageOptions" @onLeave="onSectionLeave">
   
@@ -85,32 +96,32 @@
  
  
   <FullPageSection class="pointer-events-off">
-   <MapOverlay 
+   <!-- <MapOverlay 
    class="map-overlay-half" 
    title="Where do we stand now?" 
    content="Based on 2017 court projections, Mount Laurel calls for <b>305,504</b> affordable homes across the state by 2025.">
    <HorizontalBarGraph :data="barData" :visibleBars="[true, false, false]" />
-  </MapOverlay>
+  </MapOverlay> -->
   </FullPageSection>
   
  
   <FullPageSection class="pointer-events-off">
-    <MapOverlay 
+    <!-- <MapOverlay 
     class="map-overlay-half" 
     title="" 
     content="Based on 2022 estimates, we have <b>206,083</b> affordable homes… ">
     <HorizontalBarGraph :data="barData" :visibleBars="[true, true, false]" />
-    </MapOverlay>
+    </MapOverlay> -->
   </FullPageSection>
   
   
   <FullPageSection class="pointer-events-off">
-    <MapOverlay 
+    <!-- <MapOverlay 
     class="map-overlay-half" 
     title="" 
     content="<p>…Which meets <b>26%</b> of the need.</p><p>Roughly <b>797,109</b> renter households across the state are moderate to low income.</p>">
     <HorizontalBarGraph :data="barData" :visibleBars="[true, true, true]" />
-    </MapOverlay>
+    </MapOverlay> -->
   </FullPageSection>
 
 
@@ -179,6 +190,7 @@
         modalItems: [],
         isMapClickable: false,
         showMap: false,
+        showMapOverlay: false,
         isMapVisible: false,
         graphData: {
    nodes: [
@@ -286,9 +298,11 @@
        if (destination.index === 4 || destination.index === 5 || destination.index === 6) {
          this.showMap = true;
          this.isMapVisible = true;
+         this.showMapOverlay = true;
        } else {
          this.showMap = false;
          this.isMapVisible = false;
+         this.showMapOverlay = false;
        }
      },
  
@@ -345,6 +359,15 @@
     pointer-events: auto;
   }
 
+
+  .map-overlay-outside {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    margin: 2%;
+    pointer-events: auto;
+}
 
   
   .map-overlay-half {
@@ -439,10 +462,8 @@
  
  .bg-image3 {
    background-image: url('assets/FSHC Background.jpg');
- 
    background-repeat: inherit;
    background-size: cover;
- 
    height: 100vh;
    position: relative;
  }
