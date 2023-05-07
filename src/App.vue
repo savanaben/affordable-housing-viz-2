@@ -6,6 +6,7 @@
        ref="mapboxMap"
        @open-housing-data-modal="handleHousingDataModal"
        :class="{ 'map-container': true, 'visible': isMapVisible }"
+       :currentIndex="destination.index"
      />
  
  
@@ -191,6 +192,11 @@
         isMapClickable: false,
         showMap: false,
         showMapOverlay: false,
+
+        destination: {
+        index: 0, // Initialize the index property
+       },
+
         isMapVisible: false,
         graphData: {
    nodes: [
@@ -256,16 +262,24 @@
         fullPageOptions: {
         normalScrollElements: '.map-container',
         },
-        
- 
- 
- 
- 
  
       };
     },
   
+
+
+
   
+    computed: {
+    destinationIndex() {
+      return this.destination.index;
+    },
+  },
+
+
+
+
+
     methods: {
       async handleHousingDataModal({ municipalityName, munCode }) {
     this.$refs.housingDataModal.modalTitle = municipalityName;
@@ -295,6 +309,11 @@
  
   // eslint-disable-next-line no-unused-vars
   onSectionLeave(origin, destination, direction) {
+
+    console.log("destination:", destination);
+   console.log("destination.index:", destination.index);
+
+
        if (destination.index === 4 || destination.index === 5 || destination.index === 6) {
          this.showMap = true;
          this.isMapVisible = true;
@@ -304,10 +323,12 @@
          this.isMapVisible = false;
          this.showMapOverlay = false;
        }
+
+       this.destination.index = destination.index;
+
+
      },
  
-  
-  
   
     },
   };
@@ -427,8 +448,6 @@
    flex-grow: 1;
  }
    }
- 
- 
  
   </style>
  

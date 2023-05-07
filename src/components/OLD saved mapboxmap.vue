@@ -2,15 +2,15 @@
   <div>
     <!-- Change: Separate buttons for each layer -->
 
-    <button v-show="shouldShowMtLaurelButton" class="btn btn-primary mt-2" @click="showJacobsonLayer" style="position: absolute; top: 20px; right: 20px; z-index: 9999; width: 125px; background-color: #ae017e; border-color: #ae017e;">
+    <button v-show="shouldShowMtLaurelButton" class="btn btn-primary mt-2" @click="showJacobsonLayer" style="position: absolute; top: 20px; right: 20px; z-index: 9999; background-color: #ae017e; border-color: #ae017e;">
     Mt. Laurel
    </button>
 
-    <button v-show="shouldShowMunicipalitiesButton" class="btn btn-primary mt-2" @click="showMunicipalitiesLayer" style="position: absolute; top: 60px; right: 20px; z-index: 9999; width: 125px; background-color: #238443; border-color: #238443;">
+    <button v-show="shouldShowMunicipalitiesButton" class="btn btn-primary mt-2" @click="showMunicipalitiesLayer" style="position: absolute; top: 60px; right: 20px; z-index: 9999; background-color: #238443; border-color: #238443;">
       Municipalities
     </button>
 
-    <button v-show="shouldShowCountiesButton" class="btn btn-primary mt-2" @click="showCountiesLayer" style="position: absolute; top: 100px; right: 20px; z-index: 9999; width: 125px; background-color: #cc4c02; border-color: #cc4c02;">
+    <button v-show="shouldShowCountiesButton" class="btn btn-primary mt-2" @click="showCountiesLayer" style="position: absolute; top: 100px; right: 20px; z-index: 9999; background-color: #cc4c02; border-color: #cc4c02;">
       Counties
     </button>
 
@@ -94,31 +94,6 @@ export default {
   },
 
 
-  watch: {
-  currentIndex() {
-    if (this.shouldShowJacobsonLayer()) {
-      this.showJacobsonLayer();
-    } else if (this.shouldShowMunicipalitiesLayer()) {
-      this.showMunicipalitiesLayer();
-    } else if (this.shouldShowStatesLayer()) {
-      this.showCountiesLayer();
-    } else {
-      this.layers.forEach(layer => {
-        layer.visible = false;
-        this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', 'none');
-        this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', 'none');
-      });
-      // Close the current popup if it exists
-      if (this.currentPopup) {
-        this.currentPopup.remove();
-      }
-    }
-  },
-},
-
-
-
-
   mounted() {
   this.initMap().then(() => {
     this.map.getCanvasContainer().addEventListener('mouseenter', () => {
@@ -134,6 +109,9 @@ export default {
   this.map.on('style.load', () => {
       this.showJacobsonLayer(); 
     });
+
+
+
 
   
 },
@@ -257,7 +235,7 @@ async fetchCsvData(csvUrl, layerId) {
 createDetailedHousingDataButton(municipalityName, comuMerged) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.classList.add('btn', 'mt-2', 'btn-outline-primary', 'btn-sm' );
+  button.classList.add('btn', 'mt-2', 'btn-primary', 'btn-sm' );
   button.textContent = 'Detailed Housing Data';
   button.addEventListener('click', () => this.openHousingDataModal(municipalityName, comuMerged));
   return button;
@@ -530,91 +508,44 @@ addMapInteractions(map, layerConfig) {
 
 
 
-
-shouldShowJacobsonLayer() {
-        return this.currentIndex === 4;
-      },
-shouldShowMunicipalitiesLayer() {
-        return this.currentIndex === 5;
-      },
-shouldShowStatesLayer() {
-        return this.currentIndex === 6;
-      },
-
-
- updateLayerVisibility(layerToShow) {
-  this.layers.forEach(layer => {
-    let visibility = 'none';
-
-    if (layer.id === layerToShow) {
-      visibility = 'visible';
-    }
-
-
-    if (layer.id === 'jacobson' && this.shouldShowJacobsonLayer()) {
-      visibility = 'visible';
-    } else if (layer.id === 'municipalities' && this.shouldShowMunicipalitiesLayer()) {
-      visibility = 'visible';
-    } else if (layer.id === 'states' && this.shouldShowStatesLayer()) {
-      visibility = 'visible';
-    }
-
-    this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
-    this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
-  });
-},
-
-
-
-
 showMunicipalitiesLayer() {
       const layerId = 'municipalities';
       this.layers.forEach(layer => {
-        layer.visible = layer.id === 'municipalities';
-        //const visibility = layer.visible ? 'visible' : 'none';
-        //const visibility = layer.visible && this.shouldShowMunicipalitiesLayer ? 'visible' : 'none';
-      
-        //this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
-        //this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
+        layer.visible = layer.id === layerId;
+        const visibility = layer.visible ? 'visible' : 'none';
+        this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
+        this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
       });
         // Close the current popup if it exists
   if (this.currentPopup) {
     this.currentPopup.remove();
   }
       this.addMapInteractions(this.map, layerId);
-      this.updateLayerVisibility('municipalities');
-
     },
 
 
 showCountiesLayer() {
       const layerId = 'states';
       this.layers.forEach(layer => {
-        layer.visible = layer.id === 'states';
-        //const visibility = layer.visible ? 'visible' : 'none';
-        //const visibility = layer.visible && this.shouldShowStatesLayer ? 'visible' : 'none';
-
-
-        //this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
-       // this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
+        layer.visible = layer.id === layerId;
+        const visibility = layer.visible ? 'visible' : 'none';
+        this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
+        this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
       });
         // Close the current popup if it exists
   if (this.currentPopup) {
     this.currentPopup.remove();
   }
       this.addMapInteractions(this.map, layerId);
-      this.updateLayerVisibility('states');
     },
 
   showJacobsonLayer() {
   const layerId = 'jacobson';
   this.layers.forEach(layer => {
-    layer.visible = layer.id === 'jacobson';
-    // const visibility = layer.visible ? 'visible' : 'none';
-    //const visibility = layer.visible && this.shouldShowJacobsonLayer ? 'visible' : 'none';
-
-   // this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
-   // this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
+    layer.visible = layer.id === layerId;
+    const visibility = layer.visible ? 'visible' : 'none';
+    this.map.setLayoutProperty(`${layer.id}-layer`, 'visibility', visibility);
+    this.map.setLayoutProperty(`${layer.id}-outline`, 'visibility', visibility);
   });
 
   // Close the current popup if it exists
@@ -623,7 +554,6 @@ showCountiesLayer() {
   }
   
   this.addMapInteractions(this.map, layerId);
-  this.updateLayerVisibility('jacobson');
 }
 
 
