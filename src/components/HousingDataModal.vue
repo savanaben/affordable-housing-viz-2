@@ -9,7 +9,7 @@
           </button>
         </div>
         <div class="modal-body sticky-padding-fix">
-          <h4>The following housing data is from the NJ Division of Codes and Standards 2022 List of <a href="https://www.nj.gov/dca/divisions/codes/publications/developments.html">Affordable Developments by County</a>. 
+          <h4 class="pt-4 pb-2">The following housing data is from the NJ Division of Codes and Standards 2022 List of <a href="https://www.nj.gov/dca/divisions/codes/publications/developments.html" target="_blank">Affordable Developments by County</a>. 
           </h4>
           <table class="table table-responsive table-sticky-header">
             <thead>
@@ -45,7 +45,7 @@ export default {
   },
 
   methods: {
-    showModal() {
+  showModal() {
   this.$emit('disable-scrolling');
   this.$nextTick(() => {
     const modalElement = window.jQuery('#housingDataModal');

@@ -1,17 +1,17 @@
 <template>
   <div>
     <!-- Change: Separate buttons for each layer -->
-
-    <button v-show="shouldShowMtLaurelButton" class="btn btn-primary mt-2" @click="showJacobsonLayer" style="position: absolute; top: 20px; right: 20px; z-index: 9999; width: 125px; background-color: #ae017e; border-color: #ae017e;">
+    <div> <p style="position: absolute; top: 15px; right: 19px; z-index: 9999;  font-size: 18px; background-color: white;">&nbsp;Housing Data&nbsp;</p></div>
+    <button v-show="shouldShowMtLaurelButton" class="btn btn-primary mt-2" @click="showJacobsonLayer" style="position: absolute; top: 40px; right: 15px; z-index: 9999; width: 125px; background-color: #ae017e; border-color: #ffffff; border-width: 2px;">
     Mt. Laurel
    </button>
 
-    <button v-show="shouldShowMunicipalitiesButton" class="btn btn-primary mt-2" @click="showMunicipalitiesLayer" style="position: absolute; top: 60px; right: 20px; z-index: 9999; width: 125px; background-color: #238443; border-color: #238443;">
-      Municipalities
+    <button v-show="shouldShowMunicipalitiesButton" class="btn btn-primary mt-2" @click="showMunicipalitiesLayer" style="position: absolute; top: 83px; right: 15px; z-index: 9999; width: 125px; background-color: #238443; border-color: #ffffff; border-width: 2px;">
+      Current
     </button>
 
-    <button v-show="shouldShowCountiesButton" class="btn btn-primary mt-2" @click="showCountiesLayer" style="position: absolute; top: 100px; right: 20px; z-index: 9999; width: 125px; background-color: #cc4c02; border-color: #cc4c02;">
-      Counties
+    <button v-show="shouldShowCountiesButton" class="btn btn-primary mt-2" @click="showCountiesLayer" style="position: absolute; top: 126px; right: 15px; z-index: 9999; width: 125px; background-color: #cc4c02; border-color: #ffffff; border-width: 2px;">
+      Need
     </button>
 
 
@@ -44,6 +44,8 @@ export default {
     shouldShowCountiesButton() {
       return this.currentIndex === 6;
     },
+
+
   },
  
  
@@ -130,12 +132,11 @@ export default {
     });
   });
 
-  // Show the "jacobson" layer by default
+  //Show the "jacobson" layer by default
   this.map.on('style.load', () => {
       this.showJacobsonLayer(); 
     });
 
-  
 },
 
 
@@ -152,7 +153,7 @@ async initMap() {
   const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/light-v11',
-    center: [-75.7057, 40.1583],
+    center: [-76.2057, 40.1583],
     zoom: 7.3
   });
 
@@ -276,12 +277,19 @@ createDetailedHousingDataButton(municipalityName, comuMerged) {
 
 
 
+formatFieldValue(value) {
+  const numberValue = parseFloat(value);
+  if (!isNaN(numberValue)) {
+    const formattedValue = numberValue.toLocaleString(); 
+    return formattedValue;
+  }
+  return value;
+},
 
 
 
 
 getPopupContent(layerId, properties) {
-
 
   if (layerId === 'states') {
     const countyLabel = properties.COUNTY_LABEL;
@@ -292,13 +300,14 @@ getPopupContent(layerId, properties) {
     if (rowData) {
       if (rowData.Moderate_LMI_estimate) {
         const Moderate_LMI_estimateElement = document.createElement('div');
-        Moderate_LMI_estimateElement.innerHTML = `Moderate, low, and very low <br>income household: <br> <h5>${rowData.Moderate_LMI_estimate}</h5>`;
+        const formattedUnits = this.formatFieldValue(rowData.Moderate_LMI_estimate);
+        Moderate_LMI_estimateElement.innerHTML = `Moderate, low, and very low <br>income households: <br><h5><strong>${formattedUnits}</strong></h5>`;
         popupContent.appendChild(Moderate_LMI_estimateElement);
       }
     }
       if (rowData.OccupiedRentalHousingUnits) {
         const OccupiedRentalHousingUnitsElement = document.createElement('div');
-        OccupiedRentalHousingUnitsElement.innerHTML = `Total rental households: ${rowData.OccupiedRentalHousingUnits}`;
+        OccupiedRentalHousingUnitsElement.innerHTML = `Total rental households:<br> ${rowData.OccupiedRentalHousingUnits}`;
         popupContent.appendChild(OccupiedRentalHousingUnitsElement);
       }
 
@@ -315,7 +324,8 @@ getPopupContent(layerId, properties) {
 
   if (rowData && rowData.units) {
     const unitsElement = document.createElement('div');
-    unitsElement.innerHTML = `<h5>Total: ${rowData.units}</h5>`;
+    const formattedUnits = this.formatFieldValue(rowData.units);
+    unitsElement.innerHTML = `<h5><strong>Total: ${formattedUnits}</strong></h5>`;
     popupContent.appendChild(unitsElement);
   }
 
@@ -334,38 +344,39 @@ getPopupContent(layerId, properties) {
   console.log('rowData', rowData); // First console log
 
   const popupContent = document.createElement('div');
-  popupContent.innerHTML = `<h5><strong>${municipalityName}</strong></h5>`;
+  popupContent.innerHTML = `<h5><strong>${municipalityName} </strong></h5>`;
   if (rowData) {
     if (rowData.total) {
       const totalElement = document.createElement('div');
-      totalElement.innerHTML = `<strong>Total: ${rowData.total}<strong>`;
+      const formattedUnits = this.formatFieldValue(rowData.total);
+      totalElement.innerHTML = `Total Obligation:<br><h5><strong> ${formattedUnits} homes</strong></h5>`;
       popupContent.appendChild(totalElement);
     }
     if (rowData.priorRound) {
       const priorRoundElement = document.createElement('div');
-      priorRoundElement.innerHTML = `Prior Round Obligations (1987-1999): ${rowData.priorRound}`;
+      priorRoundElement.innerHTML = `Round 1 (1987-1999): ${rowData.priorRound}`;
       popupContent.appendChild(priorRoundElement);
     }
     if (rowData.presentNeed) {
       const presentNeedElement = document.createElement('div');
-      presentNeedElement.innerHTML = `Present Need (2015): ${rowData.presentNeed}`;
+      presentNeedElement.innerHTML = `Fix Existing housing (as of 2015): ${rowData.presentNeed}`;
       popupContent.appendChild(presentNeedElement);
     }
     if (rowData.gapPresentNeed) {
       const gapPresentNeedElement = document.createElement('div');
-      gapPresentNeedElement.innerHTML = `Gap Present Need (2015): ${rowData.gapPresentNeed}`;
+      gapPresentNeedElement.innerHTML = `Round 2 (2000-2015): ${rowData.gapPresentNeed}`;
       popupContent.appendChild(gapPresentNeedElement);
     }
     if (rowData.prospectiveNeed) {
       const prospectiveNeedElement = document.createElement('div');
-      prospectiveNeedElement.innerHTML = `Prospective Need (2015-2025): ${rowData.prospectiveNeed}`;
+      prospectiveNeedElement.innerHTML = `Round 3 (2015-2025): ${rowData.prospectiveNeed}`;
       popupContent.appendChild(prospectiveNeedElement);
     }
-    if (rowData.prospectiveGapPresent) {
-      const prospectiveGapElement = document.createElement('div');
-      prospectiveGapElement.innerHTML = `Prospective + Gap Present: ${rowData.prospectiveGapPresent}`;
-      popupContent.appendChild(prospectiveGapElement);
-    }
+    // if (rowData.prospectiveGapPresent) {
+    //   const prospectiveGapElement = document.createElement('div');
+    //   prospectiveGapElement.innerHTML = `Prospective + Gap Present: ${rowData.prospectiveGapPresent}`;
+    //   popupContent.appendChild(prospectiveGapElement);
+    // }
   }
 
   else {

@@ -56,20 +56,8 @@ beforeUnmount() {
 
 
 
-  methods: {
-disableScrolling() {
-    if (this.fullpageInstance) {
-      this.fullpageInstance.setAllowScrolling(false);
-      this.fullpageInstance.setKeyboardScrolling(false);
-    }
-  },
-  enableScrolling() {
-    if (this.fullpageInstance) {
-      this.fullpageInstance.setAllowScrolling(true);
-      this.fullpageInstance.setKeyboardScrolling(true);
-    }
-    },
-  },
+
+
 };
 </script>
 
