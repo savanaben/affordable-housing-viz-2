@@ -59,9 +59,12 @@
         content=''
         /> -->
 
-        <MapOverlayTight class="map-overlay-full-top"
+        <MapOverlayTight class="pointer-events-off map-overlay-full-top"
 
-        content='<h1 class="fs-3">Affordable housing is a rich and complex network of driving forces.</h1>'>
+        content='<h1 class="fs-3">Affordable housing is a rich and complex network of driving forces.</h1>
+         <p class= "fs-5 text-left"><i>Click or drag a node to explore. Scroll to continue.</i></p>
+        '>
+        
       </MapOverlayTight>
 
 
@@ -170,7 +173,7 @@
     <div class="p-5 bg-image4">
       <MapOverlay class="map-overlay-full-bottom" 
         title='<h3>…even if all you do is keep an open heart to denser smart housing built around you.</h3>'
-        content='<i>Shown is the Merwick Stanworth community in Princeton. This community includes 56 affordable homes.</i>'>
+        content='<i>Shown is the Merwick Stanworth community in Princeton, NJ. This community includes 56 affordable homes.</i>'>
       </MapOverlay>
     </div>
    </FullPageSection>
@@ -699,19 +702,30 @@
 }
 
   
-  .map-overlay-half {
-   position: absolute;
+/* Default styles for larger screens */
+.map-overlay-half {
+    position: absolute;
     top: 0;
     left: 0;
     z-index: 2;
     margin: 2%;
     pointer-events: auto;
-   max-width: 50%;
- }
+    max-width: 50%;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+  .map-overlay-half {
+    margin: 0%;
+    transform: scale(.93);
+    transform-origin: top;
+    max-width: 100%;
+  }
+}
  
  
   .pointer-events-off {
-   pointer-events: none;
+   pointer-events: none !important;
  
  }
  
@@ -741,7 +755,6 @@
  @media (max-width: 767px) {
      .two-column-left {
        height: 50%;
-       position: absolute;
        top: 0;
        left: 0;
        right: 0;
