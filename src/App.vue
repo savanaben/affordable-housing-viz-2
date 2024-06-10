@@ -479,13 +479,13 @@
 
 
    links: [
-     { source: "1", target: "2", value: 2 },
-     { source: "1", target: "3", value: 2 },
-     { source: "1", target: "4", value: 2 },
-     { source: "1", target: "9", value: 2 },
-     { source: "1", target: "13", value: 2 },
-     { source: "1", target: "15", value: 2 },
-     { source: "1", target: "18", value: 2 },
+     { source: "1", target: "2", value: 1 },
+     { source: "1", target: "3", value: 1 },
+     { source: "1", target: "4", value: 1 },
+     { source: "1", target: "9", value: 1 },
+     { source: "1", target: "13", value: 1 },
+     { source: "1", target: "15", value: 1 },
+     { source: "1", target: "18", value: 1 },
 
      { source: "2", target: "17", value: 1 },
 
@@ -772,6 +772,12 @@
  
  
  <style scoped>
+  
+  .row {
+    place-items:center;
+  }
+  
+  
   .bg-image1 {
     background-image: url('Merwick-Stanworth - Torti Gallas and Partners.svg');
     background-position: bottom left;
@@ -791,7 +797,7 @@
    background-repeat: no-repeat;
    background-size: contain;
    width: 100%;
-   height: 100%;
+   height: 90vh;
    position: relative;
    padding-left: 10%;
    padding-right: 10%;
