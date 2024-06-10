@@ -717,7 +717,7 @@
 @media (max-width: 768px) {
   .map-overlay-half {
     margin: 0%;
-    transform: scale(.93);
+    transform: scale(.90);
     transform-origin: top;
     max-width: 100%;
   }
